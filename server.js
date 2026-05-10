@@ -169,15 +169,15 @@ function loadAndCacheGraph() {
             cachedGraph = graph;
             cachedNodes = nodes;
             cachedNodeKeysList = nodeKeysList;
-            console.log(`✅ Loaded GeoJSON: ${nodes.size} nodes, ${graph.size} edges`);
+            console.log(`Loaded GeoJSON: ${nodes.size} nodes, ${graph.size} edges`);
             return true;
         } else {
-            console.log(`⚠️ GeoJSON file not found at: ${geojsonPath}`);
-            console.log(`📁 Please place your main.geojson in the "files" folder`);
+            console.log(`GeoJSON file not found at: ${geojsonPath}`);
+            console.log(`Please place your main.geojson in the "files" folder`);
             return false;
         }
     } catch (err) {
-        console.error(`❌ Error loading GeoJSON:`, err.message);
+        console.error(`Error loading GeoJSON:`, err.message);
         return false;
     }
 }
