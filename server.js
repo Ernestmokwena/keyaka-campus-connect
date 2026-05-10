@@ -148,6 +148,57 @@ function dijkstra(graph, nodes, nodeKeysList, startKey, goalKey) {
     return { keys: pathKeys, distance: dist.get(goalKey) };
 }
 
+// Find the first intersection between direct ray and network
+function findFirstRayNetworkIntersection(graph, nodes, start, end) {
+    let firstIntersection = null;
+    let minDistanceFromStart = Infinity;
+    const checkedEdges = new Set();
+    
+    for (let [key1, edges] of graph) {
+        const node1 = nodes.get(key1);
+        if (!node1) continue;
+        for (let edge of edges) {
+            const edgeId = `${key1}|${edge.node}`;
+            if (checkedEdges.has(edgeId)) continue;
+            checkedEdges.add(edgeId);
+            const node2 = nodes.get(edge.node);
+            if (!node2) continue;
+            
+            // Check if ray from start to end intersects this edge
+            const rayStart = { x: start.lng, y: start.lat };
+            const rayEnd = { x: end.lng, y: end.lat };
+            const edgeStart = { x: node1.lng, y: node1.lat };
+            const edgeEnd = { x: node2.lng, y: node2.lat };
+            
+            const intersection = lineIntersection(rayStart, rayEnd, edgeStart, edgeEnd);
+            if (intersection) {
+                const intersectPoint = { lat: intersection.y, lng: intersection.x };
+                const distFromStart = haversineDistance(start, intersectPoint);
+                if (distFromStart < minDistanceFromStart && distFromStart > 1) {
+                    minDistanceFromStart = distFromStart;
+                    firstIntersection = intersectPoint;
+                }
+            }
+        }
+    }
+    return { intersection: firstIntersection, distance: minDistanceFromStart };
+}
+
+function lineIntersection(p1, p2, p3, p4) {
+    const denominator = ((p4.y - p3.y) * (p2.x - p1.x) - (p4.x - p3.x) * (p2.y - p1.y));
+    if (denominator === 0) return null;
+    
+    const ua = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denominator;
+    const ub = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denominator;
+    
+    if (ua < 0 || ua > 1 || ub < 0 || ub > 1) return null;
+    
+    return {
+        x: p1.x + ua * (p2.x - p1.x),
+        y: p1.y + ua * (p2.y - p1.y)
+    };
+}
+
 // Cache for graph data
 let cachedGraph = null;
 let cachedNodes = null;
@@ -163,21 +214,19 @@ function loadAndCacheGraph() {
             cachedGraph = graph;
             cachedNodes = nodes;
             cachedNodeKeysList = nodeKeysList;
-            console.log(`Loaded GeoJSON: ${nodes.size} nodes, ${graph.size} edges`);
+            console.log(`✅ Loaded GeoJSON: ${nodes.size} nodes, ${graph.size} edges`);
             return true;
         } else {
-            console.log(`GeoJSON file not found at: ${geojsonPath}`);
+            console.log(`❌ GeoJSON file not found at: ${geojsonPath}`);
             return false;
         }
     } catch (err) {
-        console.error(`Error loading GeoJSON:`, err.message);
+        console.error(`❌ Error loading GeoJSON:`, err.message);
         return false;
     }
 }
 
-// ============================================
-// ROUTE ENDPOINT - Only returns paths, never the graph!
-// ============================================
+// Ray-First Route endpoint
 app.get('/api/route', (req, res) => {
     const { startLat, startLng, endLat, endLng, mode = 'walk' } = req.query;
     
@@ -204,11 +253,13 @@ app.get('/api/route', (req, res) => {
         });
     }
     
-    // Find closest nodes on network
-    const closestStart = findClosestNode(cachedNodes, start);
-    const closestEnd = findClosestNode(cachedNodes, end);
+    // RAY-FIRST: Find intersection with network
+    const { intersection, distance: rayToIntersectDist } = findFirstRayNetworkIntersection(
+        cachedGraph, cachedNodes, start, end
+    );
     
-    if (!closestStart.key || !closestEnd.key) {
+    // If no intersection, return direct route
+    if (!intersection) {
         const directDistance = haversineDistance(start, end);
         const speed = mode === 'walk' ? 1.4 : 8;
         const timeMinutes = Math.ceil(directDistance / (speed * 60));
@@ -223,10 +274,11 @@ app.get('/api/route', (req, res) => {
         });
     }
     
-    // Find network path
-    const networkPathResult = dijkstra(cachedGraph, cachedNodes, cachedNodeKeysList, closestStart.key, closestEnd.key);
+    // Find closest nodes to intersection and destination
+    const intersectionNodeKey = findClosestNode(cachedNodes, intersection).key;
+    const endNodeKey = findClosestNode(cachedNodes, end).key;
     
-    if (!networkPathResult) {
+    if (!intersectionNodeKey || !endNodeKey) {
         const directDistance = haversineDistance(start, end);
         const speed = mode === 'walk' ? 1.4 : 8;
         const timeMinutes = Math.ceil(directDistance / (speed * 60));
@@ -241,15 +293,33 @@ app.get('/api/route', (req, res) => {
         });
     }
     
-    // Build full path with connection points
+    // Get network path from intersection to destination
+    const networkPath = dijkstra(cachedGraph, cachedNodes, cachedNodeKeysList, intersectionNodeKey, endNodeKey);
+    
+    if (!networkPath) {
+        const directDistance = haversineDistance(start, end);
+        const speed = mode === 'walk' ? 1.4 : 8;
+        const timeMinutes = Math.ceil(directDistance / (speed * 60));
+        
+        return res.json({
+            status: 'success',
+            distance: directDistance,
+            duration: timeMinutes,
+            path: [[start.lat, start.lng], [end.lat, end.lng]],
+            mode: mode,
+            usedNetwork: false
+        });
+    }
+    
+    // Build full path: start -> intersection -> network path -> end
     const path = [
         [start.lat, start.lng],
-        [cachedNodes.get(closestStart.key).lat, cachedNodes.get(closestStart.key).lng],
-        ...networkPathResult.keys.map(key => [cachedNodes.get(key).lat, cachedNodes.get(key).lng]),
+        [intersection.lat, intersection.lng],
+        ...networkPath.keys.map(key => [cachedNodes.get(key).lat, cachedNodes.get(key).lng]),
         [end.lat, end.lng]
     ];
     
-    const totalDistance = closestStart.distance + networkPathResult.distance + closestEnd.distance;
+    const totalDistance = rayToIntersectDist + networkPath.distance;
     const speed = mode === 'walk' ? 1.4 : 8;
     const timeMinutes = Math.ceil(totalDistance / (speed * 60));
     
@@ -260,11 +330,10 @@ app.get('/api/route', (req, res) => {
         path: path,
         mode: mode,
         usedNetwork: true,
-        nodesUsed: networkPathResult.keys.length
+        intersectionPoint: [intersection.lat, intersection.lng]
     });
 });
 
-// API: Get graph statistics (safe - only counts, no data)
 app.get('/api/stats', (req, res) => {
     res.json({
         loaded: cachedGraph !== null,
@@ -273,12 +342,10 @@ app.get('/api/stats', (req, res) => {
     });
 });
 
-// Serve your HTML file
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start server
 app.listen(PORT, () => {
     console.log(`
 ╔════════════════════════════════════════╗
