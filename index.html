@@ -667,6 +667,7 @@
         let currentMode = "walk";
         let followMode = false;
         let routeLayer = null;
+        let intersectionMarker = null;
 
         const statusDiv = document.getElementById('gpsText');
         const sheet = document.getElementById('navSheet');
@@ -690,6 +691,10 @@
                 map.removeLayer(routeLayer);
                 routeLayer = null;
             }
+            if (intersectionMarker) {
+                map.removeLayer(intersectionMarker);
+                intersectionMarker = null;
+            }
         }
 
         function updateMetrics(distance) {
@@ -704,6 +709,7 @@
         function fetchRoute() {
             if (!currentLocation || !currentDestination) return;
             
+            // Clear old route completely before fetching new one
             clearRouteLayer();
             
             const url = `/api/route?startLat=${currentLocation.lat}&startLng=${currentLocation.lng}&endLat=${currentDestination.lat}&endLng=${currentDestination.lng}&mode=${currentMode}`;
@@ -712,12 +718,22 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.path && data.path.length > 0) {
+                        // Draw the main route
                         routeLayer = L.polyline(data.path, {
                             color: "#C8F135",
                             weight: 5,
                             opacity: 0.95,
                             lineCap: 'round'
                         }).addTo(map);
+                        
+                        // Draw intersection point if it exists
+                        if (data.intersectionPoint) {
+                            intersectionMarker = L.circleMarker(
+                                [data.intersectionPoint[0], data.intersectionPoint[1]], 
+                                { radius: 8, fillColor: "#C8F135", color: "#0A0A0C", weight: 2, fillOpacity: 1 }
+                            ).addTo(map);
+                        }
+                        
                         updateMetrics(data.distance);
                     }
                 })
@@ -827,7 +843,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.loaded) {
-                        statusDiv.innerHTML = `GPS active · Let's Go Places!`;
+                        statusDiv.innerHTML = `GPS active · ${data.nodeCount} nodes ready`;
                         if (currentLocation && currentDestination) fetchRoute();
                     } else {
                         statusDiv.innerHTML = "Waiting for network…";
