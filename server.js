@@ -184,7 +184,7 @@ function loadAndCacheGraph() {
 
 // API: Get the network data (hidden endpoint)
 app.get('/api/network-data', (req, res) => {
-    const geojsonPath = path.join(__dirname, 'files', 'main.geojson');
+    const geojsonPath = '/etc/secrets/main.geojson';
     
     try {
         if (fs.existsSync(geojsonPath)) {
