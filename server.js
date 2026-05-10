@@ -169,34 +169,22 @@ function loadAndCacheGraph() {
             cachedGraph = graph;
             cachedNodes = nodes;
             cachedNodeKeysList = nodeKeysList;
-            console.log(`Loaded GeoJSON: ${nodes.size} nodes, ${graph.size} edges`);
+            console.log(`✅ Loaded GeoJSON: ${nodes.size} nodes, ${graph.size} edges`);
             return true;
         } else {
-            console.log(`GeoJSON file not found at: ${geojsonPath}`);
-            console.log(`Please place your main.geojson in the "files" folder`);
+            console.log(`❌ GeoJSON file not found at: ${geojsonPath}`);
+            console.log(`📁 Please add main.geojson as a Secret File on Render`);
             return false;
         }
     } catch (err) {
-        console.error(`Error loading GeoJSON:`, err.message);
+        console.error(`❌ Error loading GeoJSON:`, err.message);
         return false;
     }
 }
 
-// API: Get the network data (hidden endpoint)
-app.get('/api/network-data', (req, res) => {
-    const geojsonPath = '/etc/secrets/main.geojson';
-    
-    try {
-        if (fs.existsSync(geojsonPath)) {
-            const geojson = JSON.parse(fs.readFileSync(geojsonPath, 'utf8'));
-            res.json(geojson);
-        } else {
-            res.json({ type: "FeatureCollection", features: [] });
-        }
-    } catch (err) {
-        res.status(500).json({ error: "Failed to load network data" });
-    }
-});
+// ============================================
+// /api/network-data endpoint REMOVED for security
+// ============================================
 
 // API: Calculate route
 app.get('/api/route', (req, res) => {
