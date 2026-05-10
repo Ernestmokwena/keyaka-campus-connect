@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -290,11 +289,9 @@
             border-top: 1px solid var(--border-hi);
             border-radius: 24px 24px 0 0;
             transition: transform 0.36s cubic-bezier(0.32, 0.72, 0, 1);
-            /* peek: handle + compact row */
             --full-h: 380px;
         }
 
-        /* collapsed = only peek visible */
         .sheet.collapsed {
             transform: translateY(calc(100% - var(--sheet-peek)));
         }
@@ -307,7 +304,6 @@
             transform: translateY(calc(100% - var(--sheet-peek)));
         }
 
-        /* drag handle */
         .sheet-handle-row {
             display: flex;
             justify-content: center;
@@ -321,7 +317,6 @@
             background: var(--border-hi);
         }
 
-        /* compact row (always visible when not expanded) */
         .compact-row {
             display: flex;
             align-items: center;
@@ -352,14 +347,12 @@
             flex-shrink: 0;
         }
 
-        /* expanded content */
         .sheet-body {
             display: none;
             padding: 0 18px 32px;
         }
         .sheet.expanded .sheet-body { display: block; }
 
-        /* row label above cards */
         .sheet-section-label {
             font-size: 10px;
             font-weight: 600;
@@ -370,7 +363,6 @@
             margin-top: 18px;
         }
 
-        /* from / to cards */
         .route-card {
             background: var(--surface-2);
             border: 1px solid var(--border);
@@ -409,7 +401,6 @@
             text-overflow: ellipsis;
         }
 
-        /* metrics strip */
         .metrics-strip {
             display: flex;
             background: var(--surface-2);
@@ -443,7 +434,6 @@
             margin-top: 5px;
         }
 
-        /* action buttons */
         .actions-row {
             display: flex;
             gap: 10px;
@@ -488,7 +478,6 @@
         }
         .btn-stop:active { background: var(--surface-2); }
 
-        /* gps status */
         .gps-row {
             display: flex;
             align-items: center;
@@ -520,7 +509,6 @@
             font-family: 'DM Mono', monospace;
         }
 
-        /* close pill inside expanded sheet */
         .sheet-top-row {
             display: flex;
             align-items: center;
@@ -547,7 +535,6 @@
             color: var(--text-2);
         }
 
-        /* ── BOTTOM NAV ── */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -560,7 +547,6 @@
             padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 6px);
         }
 
-        /* hide nav when sheet expanded */
         .sheet.expanded ~ .bottom-nav,
         body.sheet-open .bottom-nav {
             opacity: 0;
@@ -591,11 +577,9 @@
             color: var(--accent);
         }
 
-        /* leaflet overrides */
         .leaflet-control-zoom { display: none !important; }
         .leaflet-control-attribution { display: none !important; }
 
-        /* scrollbar in suggestions */
         .suggestions-dropdown::-webkit-scrollbar { width: 4px; }
         .suggestions-dropdown::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
     </style>
@@ -604,7 +588,6 @@
 <body>
     <div id="map"></div>
 
-    <!-- TOP BAR -->
     <div class="top-bar">
         <div class="search-wrap">
             <span class="icon icon-sm search-icon-left">search</span>
@@ -621,33 +604,28 @@
         </div>
     </div>
 
-    <!-- MODE PILL -->
     <div class="mode-pill" id="modeToggle">
         <span class="icon icon-sm" id="modeIcon">directions_walk</span>
         <span class="mode-pill-label" id="modeText">Walk</span>
     </div>
 
-    <!-- MAP CONTROLS -->
     <div class="map-controls">
         <div class="ctrl-btn" id="zoomInBtn"><span class="icon icon-md">add</span></div>
         <div class="ctrl-btn" id="zoomOutBtn"><span class="icon icon-md">remove</span></div>
         <div class="ctrl-btn" id="followMeBtn"><span class="icon icon-md">navigation</span></div>
     </div>
 
-    <!-- BOTTOM SHEET -->
     <div class="sheet inactive" id="navSheet">
         <div class="sheet-handle-row" id="handleArea">
             <div class="sheet-handle"></div>
         </div>
 
-        <!-- Compact peek row -->
         <div class="compact-row" id="compactInfo">
             <span class="icon icon-sm" id="compactMode" style="color:var(--text-3)">directions_walk</span>
             <span class="compact-dest-text" id="compactDest">Select destination</span>
             <span class="compact-badge" id="compactDistance">—</span>
         </div>
 
-        <!-- Expanded content -->
         <div class="sheet-body">
             <div class="sheet-top-row">
                 <span class="sheet-title-text" id="sheetModeTitle">Walking route</span>
@@ -703,7 +681,6 @@
         </div>
     </div>
 
-    <!-- BOTTOM NAV -->
     <div class="bottom-nav" id="bottomNav">
         <button class="nav-tab">
             <span class="icon icon-sm nav-tab-icon">explore</span>
@@ -723,7 +700,6 @@
         </button>
     </div>
 
-    <!-- ═══════════════════ ALL ORIGINAL OOP LOGIC — UNTOUCHED ═══════════════════ -->
     <script>
         let map;
         let graph = new Map();
@@ -807,27 +783,6 @@
                 });
             }
             return { nodeCount: nodes.size };
-        }
-
-        function drawNetwork() {
-            pathNetworkLayers.forEach(layer => { if (layer) map.removeLayer(layer); });
-            pathNetworkLayers = [];
-            let drawnEdges = new Set();
-            for (let [key, edges] of graph) {
-                const fromNode = nodes.get(key);
-                if (!fromNode) continue;
-                for (let edge of edges) {
-                    const toNode = nodes.get(edge.node);
-                    if (!toNode) continue;
-                    const edgeId = `${key}|${edge.node}`;
-                    if (!drawnEdges.has(edgeId)) {
-                        const latlngs = [[fromNode.lat, fromNode.lng], [toNode.lat, toNode.lng]];
-                        const line = L.polyline(latlngs, { color: "#facc15", weight: 3, opacity: 0, lineCap: 'round' }).addTo(map);
-                        pathNetworkLayers.push(line);
-                        drawnEdges.add(edgeId);
-                    }
-                }
-            }
         }
 
         function findFirstRayNetworkIntersection(start, end) {
@@ -990,6 +945,7 @@
         }
 
         function stopNavigation() { isNavigating = false; setFollowMode(false); clearDestination(); }
+        
         function setFollowMode(enabled) {
             followMode = enabled;
             if (followMode) {
@@ -999,6 +955,7 @@
                 followBtn.classList.remove('follow-active');
             }
         }
+        
         function toggleFollowMode() { setFollowMode(!followMode); }
         function centerOnLocation() { if (currentLocation) { map.setView([currentLocation.lat, currentLocation.lng], map.getZoom()); if (followMode) setFollowMode(false); } }
 
@@ -1042,26 +999,32 @@
             });
         }
 
-        function loadGeoJsonFromUrl(url) {
-            networkStatusSpan.innerHTML = "Loading…";
-            fetch(url)
-                .then(response => {
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    return response.json();
-                })
-                .then(geojson => {
-                    const stats = buildGraphFromGeoJson(geojson);
-                    pathLoaded = true;
-                    // drawNetwork(); 
-                    networkStatusSpan.innerHTML = `${stats.nodeCount} nodes`;
-                    statusDiv.innerHTML = `Network ready · ${stats.nodeCount} nodes`;
-                    if (currentLocation && currentDestination) updateAllRoutes();
+        // Network data is loaded on the server - frontend just needs to know it's ready
+        // We'll fetch the stats endpoint to get node count and mark pathLoaded as true
+        function checkNetworkStatus() {
+            networkStatusSpan.innerHTML = "Checking…";
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.loaded && data.nodeCount > 0) {
+                        pathLoaded = true;
+                        networkStatusSpan.innerHTML = `${data.nodeCount} nodes`;
+                        statusDiv.innerHTML = `Network ready · ${data.nodeCount} nodes`;
+                        if (currentLocation && currentDestination) updateAllRoutes();
+                    } else {
+                        networkStatusSpan.innerHTML = "Loading…";
+                        statusDiv.innerHTML = "Waiting for network…";
+                        pathLoaded = false;
+                        // Retry after 2 seconds
+                        setTimeout(checkNetworkStatus, 2000);
+                    }
                 })
                 .catch(err => {
-                    console.error("Failed to load GeoJSON:", err);
-                    networkStatusSpan.innerHTML = "Offline";
-                    statusDiv.innerHTML = "Network data unavailable";
+                    console.error("Failed to check network status:", err);
+                    networkStatusSpan.innerHTML = "Retrying…";
+                    statusDiv.innerHTML = "Connecting to server…";
                     pathLoaded = false;
+                    setTimeout(checkNetworkStatus, 3000);
                 });
         }
 
@@ -1082,7 +1045,7 @@
                     document.getElementById('departureLabel').innerHTML =
                         `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
                     led.classList.add('live');
-                    statusDiv.innerHTML = pathLoaded ? "GPS active · Network ready" : "GPS active · Loading network…";
+                    statusDiv.innerHTML = pathLoaded ? "GPS active · Network ready" : "GPS active · Waiting for network…";
                     if (userMarker) userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
                     else {
                         userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], {
@@ -1099,7 +1062,7 @@
                         if (isNavigating && haversine(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng) < 20) {
                             isNavigating = false;
                             setFollowMode(false);
-                            statusDiv.innerHTML = "Arrived";
+                            statusDiv.innerHTML = "Arrived!";
                             if (window.navigator.vibrate) window.navigator.vibrate(200);
                             sheet.classList.add('expanded');
                             updateAllRoutes();
@@ -1183,7 +1146,7 @@
         window.addEventListener('load', () => {
             initMap();
             startGPS();
-            loadGeoJsonFromUrl('/api/network-data');
+            checkNetworkStatus(); // Check /api/stats instead of loading full GeoJSON
         });
 
         window.addEventListener('beforeunload', () => {
