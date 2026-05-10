@@ -5,10 +5,8 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files
 app.use(express.static(__dirname));
 
-// Helper function: Haversine distance calculation
 function haversineDistance(point1, point2) {
     const R = 6371000;
     const toRad = Math.PI / 180;
@@ -25,7 +23,6 @@ function haversineDistance(point1, point2) {
     return R * c;
 }
 
-// Helper function: Find closest node in graph
 function findClosestNode(nodes, point) {
     let closestKey = null;
     let minDist = Infinity;
@@ -41,7 +38,6 @@ function findClosestNode(nodes, point) {
     return { key: closestKey, distance: minDist };
 }
 
-// Build graph from GeoJSON
 function buildGraphFromGeoJson(geojson) {
     const graph = new Map();
     const nodes = new Map();
@@ -104,7 +100,6 @@ function buildGraphFromGeoJson(geojson) {
     return { graph, nodes, nodeKeysList };
 }
 
-// Dijkstra algorithm for shortest path
 function dijkstra(graph, nodes, nodeKeysList, startKey, goalKey) {
     const dist = new Map();
     const prev = new Map();
@@ -158,7 +153,6 @@ let cachedGraph = null;
 let cachedNodes = null;
 let cachedNodeKeysList = null;
 
-// Load and cache the GeoJSON
 function loadAndCacheGraph() {
     const geojsonPath = '/etc/secrets/main.geojson';
     
@@ -173,7 +167,6 @@ function loadAndCacheGraph() {
             return true;
         } else {
             console.log(`❌ GeoJSON file not found at: ${geojsonPath}`);
-            console.log(`📁 Please add main.geojson as a Secret File on Render`);
             return false;
         }
     } catch (err) {
@@ -183,10 +176,8 @@ function loadAndCacheGraph() {
 }
 
 // ============================================
-// /api/network-data endpoint REMOVED for security
+// ROUTE ENDPOINT - Only returns paths, never the graph!
 // ============================================
-
-// API: Calculate route
 app.get('/api/route', (req, res) => {
     const { startLat, startLng, endLat, endLng, mode = 'walk' } = req.query;
     
@@ -273,7 +264,7 @@ app.get('/api/route', (req, res) => {
     });
 });
 
-// API: Get graph statistics
+// API: Get graph statistics (safe - only counts, no data)
 app.get('/api/stats', (req, res) => {
     res.json({
         loaded: cachedGraph !== null,
@@ -298,6 +289,5 @@ app.listen(PORT, () => {
 ╠════════════════════════════════════════╣
     `);
     
-    // Load GeoJSON on startup
     loadAndCacheGraph();
 });
