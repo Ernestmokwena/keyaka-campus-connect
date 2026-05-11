@@ -19,7 +19,6 @@
         }
 
         :root {
-            /* Light theme */
             --bg:         #E8EDE2;
             --glass:      rgba(255, 255, 255, 0.78);
             --glass-hi:   rgba(255, 255, 255, 0.92);
@@ -36,11 +35,12 @@
             --text-2:     #445230;
             --text-3:     #8A9E74;
             --danger:     #E53E3E;
+            --warning:    #F59E0B;
             --safe:       #3DA01A;
             --radius-sm:  12px;
             --radius-md:  18px;
             --radius-lg:  26px;
-            --radius-full:999px;
+            --radius-full: 999px;
             --sheet-peek: 88px;
             --sidebar-w:  340px;
             --blur:       blur(22px);
@@ -712,11 +712,31 @@
 
         .sheet::-webkit-scrollbar       { width: 3px; }
         .sheet::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 4px; }
+        
+        /* Off-route warning badge */
+        .off-route-badge {
+            position: fixed;
+            bottom: calc(var(--sheet-peek) + 100px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--warning);
+            color: #111D00;
+            padding: 8px 16px;
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            font-weight: 800;
+            z-index: 80;
+            display: none;
+            box-shadow: var(--shadow-md);
+            white-space: nowrap;
+        }
     </style>
 </head>
 
 <body>
     <div id="map"></div>
+    
+    <div class="off-route-badge" id="offRouteBadge">⚠️ Off route • Rerouting...</div>
 
     <div class="top-bar">
         <div class="search-wrap">
@@ -848,20 +868,24 @@
         let followMode = false;
         let routeLayer = null;
         let intersectionMarker = null;
+        let dashedRouteLayer = null;  // For off-route dashed line
         
-        // FIX 1: Add throttling and request tracking variables
-        let lastRouteFetch = 0;
+        // Route management
         let isFetchingRoute = false;
         let currentRouteRequestId = 0;
         let offRouteCounter = 0;
-        let lastKnownRoutePath = null;
-
+        let lastOffRouteCheck = 0;
+        let isOffRouteFlag = false;
+        let lastRouteStartPoint = null;  // Store where the route started from
+        let originalDestination = null;   // Store destination for rerouting
+        
         const statusDiv = document.getElementById('gpsText');
         const sheet = document.getElementById('navSheet');
         const searchInput = document.getElementById('searchInput');
         const suggestionsDropdown = document.getElementById('suggestionsDropdown');
         const clearSearchBtn = document.getElementById('clearSearchBtn');
         const followBtn = document.getElementById('followMeBtn');
+        const offRouteBadge = document.getElementById('offRouteBadge');
 
         function haversine(lat1, lon1, lat2, lon2) {
             const R = 6371000;
@@ -882,10 +906,14 @@
                 map.removeLayer(intersectionMarker);
                 intersectionMarker = null;
             }
+            if (dashedRouteLayer) {
+                map.removeLayer(dashedRouteLayer);
+                dashedRouteLayer = null;
+            }
         }
 
         function updateMetrics(distance) {
-            if (!distance) return;
+            if (!distance && distance !== 0) return;
             const time = currentMode === "walk" ? distance / (1.4 * 60) : distance / (8 * 60);
             const distText = distance < 1000 ? `${Math.round(distance)}m` : `${(distance / 1000).toFixed(1)}km`;
             document.getElementById('distanceVal').innerHTML = distText;
@@ -893,49 +921,123 @@
             document.getElementById('compactDistance').innerHTML = distText;
         }
 
-        // FIX 2: Improved fetchRoute with request deduplication and throttling
-        function fetchRoute(forceReroute = false) {
-            if (!currentLocation || !currentDestination) return;
+        // Check if user is off-route from the stored route path
+        function checkOffRoute() {
+            if (!routeLayer || !currentLocation || !isNavigating) return false;
             
-            // Don't fetch if already fetching
+            // Get the route path from the current polyline
+            const routePath = routeLayer.getLatLngs();
+            if (!routePath || routePath.length === 0) return false;
+            
+            let minDistance = Infinity;
+            for (let i = 0; i < routePath.length; i++) {
+                const point = routePath[i];
+                const dist = haversine(
+                    currentLocation.lat, currentLocation.lng,
+                    point.lat, point.lng
+                );
+                minDistance = Math.min(minDistance, dist);
+            }
+            
+            return minDistance > 30; // 30 meter threshold
+        }
+
+        // Draw dashed line from current position to nearest point on route
+        function drawDashedLineToRoute() {
+            if (!routeLayer || !currentLocation || !isNavigating) return;
+            
+            // Remove existing dashed line
+            if (dashedRouteLayer) {
+                map.removeLayer(dashedRouteLayer);
+                dashedRouteLayer = null;
+            }
+            
+            const routePath = routeLayer.getLatLngs();
+            if (!routePath || routePath.length === 0) return;
+            
+            // Find closest point on route
+            let closestPoint = null;
+            let minDistance = Infinity;
+            for (let i = 0; i < routePath.length; i++) {
+                const point = routePath[i];
+                const dist = haversine(
+                    currentLocation.lat, currentLocation.lng,
+                    point.lat, point.lng
+                );
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestPoint = point;
+                }
+            }
+            
+            if (closestPoint && minDistance > 5) {
+                dashedRouteLayer = L.polyline(
+                    [[currentLocation.lat, currentLocation.lng], [closestPoint.lat, closestPoint.lng]],
+                    { color: "#F59E0B", weight: 3, opacity: 0.8, dashArray: "8, 8", lineCap: 'round' }
+                ).addTo(map);
+            }
+        }
+
+        // Reroute from current position to destination
+        function rerouteFromCurrentPosition() {
+            if (!currentLocation || !currentDestination || !isNavigating) return;
             if (isFetchingRoute) return;
             
-            // Throttle: minimum 3 seconds between route fetches unless forced
-            const now = Date.now();
-            if (!forceReroute && (now - lastRouteFetch) < 3000) return;
+            offRouteBadge.style.display = 'block';
+            setTimeout(() => {
+                offRouteBadge.style.display = 'none';
+            }, 3000);
+            
+            fetchRoute(true, currentLocation);
+        }
+
+        // Main fetch route function with start point parameter
+        function fetchRoute(forceReroute = false, startPoint = null) {
+            if (!currentDestination) return;
+            
+            const routeStart = startPoint || currentLocation;
+            if (!routeStart) return;
+            
+            if (isFetchingRoute) return;
             
             isFetchingRoute = true;
-            lastRouteFetch = now;
             
-            // Increment request ID to handle race conditions
             const thisRequestId = ++currentRouteRequestId;
             
-            const url = `/api/route?startLat=${currentLocation.lat}&startLng=${currentLocation.lng}&endLat=${currentDestination.lat}&endLng=${currentDestination.lng}&mode=${currentMode}`;
+            const url = `/api/route?startLat=${routeStart.lat}&startLng=${routeStart.lng}&endLat=${currentDestination.lat}&endLng=${currentDestination.lng}&mode=${currentMode}`;
             
             fetch(url)
                 .then(response => response.json())
                 .then(data => {
-                    // Ignore stale responses
                     if (thisRequestId !== currentRouteRequestId) {
                         isFetchingRoute = false;
                         return;
                     }
                     
                     if (data.path && data.path.length > 0) {
-                        // ALWAYS remove old layer before adding new one
+                        // Remove old route
                         if (routeLayer) {
                             map.removeLayer(routeLayer);
                             routeLayer = null;
                         }
+                        if (dashedRouteLayer) {
+                            map.removeLayer(dashedRouteLayer);
+                            dashedRouteLayer = null;
+                        }
                         
-                        routeLayer = L.polyline(data.path, {
-                            color: "#C8F135",
+                        // Convert path to Leaflet latlngs
+                        const latlngs = data.path.map(p => [p[0], p[1]]);
+                        
+                        // Draw new route
+                        routeLayer = L.polyline(latlngs, {
+                            color: forceReroute ? "#F59E0B" : "#C8F135",
                             weight: 5,
                             opacity: 0.95,
                             lineCap: 'round'
                         }).addTo(map);
                         
-                        lastKnownRoutePath = data.path;
+                        // Store start point for this route
+                        lastRouteStartPoint = routeStart;
                         
                         if (data.intersectionPoint) {
                             if (intersectionMarker) {
@@ -946,7 +1048,20 @@
                                 { radius: 8, fillColor: "#C8F135", color: "#111D00", weight: 2, fillOpacity: 1 }
                             ).addTo(map);
                         }
+                        
+                        // Update metrics with remaining distance
                         updateMetrics(data.distance);
+                        
+                        // If this was a reroute, change route color back to green after 5 seconds
+                        if (forceReroute) {
+                            setTimeout(() => {
+                                if (routeLayer) {
+                                    routeLayer.setStyle({ color: "#C8F135" });
+                                }
+                                offRouteCounter = 0;
+                                isOffRouteFlag = false;
+                            }, 5000);
+                        }
                     }
                     isFetchingRoute = false;
                 })
@@ -956,32 +1071,14 @@
                 });
         }
 
-        // FIX 3: Check if user is significantly off-route
-        function isOffRoute(toleranceMeters = 15) {
-            if (!lastKnownRoutePath || !currentLocation) return false;
-            
-            let minDistance = Infinity;
-            for (let i = 0; i < lastKnownRoutePath.length; i++) {
-                const dist = haversine(
-                    currentLocation.lat, currentLocation.lng,
-                    lastKnownRoutePath[i][0], lastKnownRoutePath[i][1]
-                );
-                minDistance = Math.min(minDistance, dist);
-            }
-            
-            return minDistance > toleranceMeters;
-        }
-
         function setDestination(dest) {
-            // Clear any existing route state
-            if (routeLayer) {
-                map.removeLayer(routeLayer);
-                routeLayer = null;
-            }
-            lastKnownRoutePath = null;
+            // Clear existing route
+            clearRouteLayer();
             offRouteCounter = 0;
+            isOffRouteFlag = false;
             
             currentDestination = dest;
+            originalDestination = dest;
             document.getElementById('destinationLabel').innerHTML = dest.name;
             document.getElementById('compactDest').innerHTML = dest.name;
             
@@ -993,26 +1090,20 @@
             });
             destMarker = L.marker([dest.lat, dest.lng], { icon: destIcon }).addTo(map);
             
-            if (currentLocation) fetchRoute(true); // Force fetch on new destination
+            if (currentLocation) fetchRoute(false, currentLocation);
             sheet.classList.remove('inactive');
             sheet.classList.add('expanded');
         }
 
         function clearDestination() {
-            // Reset all route-related state
-            if (routeLayer) {
-                map.removeLayer(routeLayer);
-                routeLayer = null;
-            }
-            if (intersectionMarker) {
-                map.removeLayer(intersectionMarker);
-                intersectionMarker = null;
-            }
-            lastKnownRoutePath = null;
+            clearRouteLayer();
             offRouteCounter = 0;
-            currentRouteRequestId = 0; // Reset request counter
+            isOffRouteFlag = false;
             
             currentDestination = null;
+            originalDestination = null;
+            lastRouteStartPoint = null;
+            
             if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
             
             document.getElementById('destinationLabel').innerHTML = "Select destination";
@@ -1025,9 +1116,17 @@
 
         function startNavigation() {
             if (!currentLocation) return;
-            if (!currentDestination) { sheet.classList.add('expanded'); searchInput.focus(); return; }
+            if (!currentDestination) { 
+                sheet.classList.add('expanded'); 
+                searchInput.focus(); 
+                return; 
+            }
             isNavigating = true;
-            fetchRoute(true);
+            offRouteCounter = 0;
+            isOffRouteFlag = false;
+            
+            // Fetch route from current position
+            fetchRoute(false, currentLocation);
             map.setView([currentLocation.lat, currentLocation.lng], 18);
             sheet.classList.remove('expanded');
             sheet.classList.add('collapsed');
@@ -1036,7 +1135,8 @@
         function stopNavigation() { 
             isNavigating = false; 
             setFollowMode(false); 
-            clearDestination(); 
+            clearDestination();
+            offRouteBadge.style.display = 'none';
         }
         
         function setFollowMode(enabled) {
@@ -1097,7 +1197,7 @@
                 .then(data => {
                     if (data.loaded) {
                         statusDiv.innerHTML = `GPS active · ${data.nodeCount} nodes ready`;
-                        if (currentLocation && currentDestination) fetchRoute(true);
+                        if (currentLocation && currentDestination && !isNavigating) fetchRoute(false, currentLocation);
                     } else {
                         statusDiv.innerHTML = "Waiting for network…";
                         setTimeout(checkNetworkStatus, 2000);
@@ -1118,17 +1218,16 @@
         function startGPS() {
             if (!navigator.geolocation) { statusDiv.innerHTML = "GPS not supported"; return; }
             const led = document.getElementById('gpsLed');
+            let lastRerouteTime = 0;
+            
             watchId = navigator.geolocation.watchPosition(
                 (pos) => {
                     const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                    const locationChanged = !currentLocation || 
-                        Math.abs(currentLocation.lat - newLoc.lat) > 0.00001 ||
-                        Math.abs(currentLocation.lng - newLoc.lng) > 0.00001;
-                    
                     currentLocation = newLoc;
                     document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
                     led.classList.add('live');
                     
+                    // Update user marker position (RAW GPS - no snapping)
                     if (userMarker) {
                         userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
                     } else {
@@ -1141,43 +1240,76 @@
                         }).addTo(map);
                     }
                     
+                    // Auto-center if follow mode is on
                     if (followMode && currentLocation) {
                         map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
                     }
                     
-                    // FIX 4: Only reroute when significantly off course, not on every movement
-                    if (currentDestination) {
-                        if (locationChanged) {
-                            const offRoute = isOffRoute(15); // 15 meter tolerance
-                            
-                            if (offRoute) {
-                                offRouteCounter++;
-                                // Only reroute after 3 consecutive off-route detections (~15 seconds)
-                                if (offRouteCounter >= 3) {
-                                    fetchRoute(true); // Force reroute
-                                    offRouteCounter = 0;
-                                }
-                            } else {
-                                // Back on route, reset counter
-                                offRouteCounter = Math.max(0, offRouteCounter - 1);
-                                // Just update metrics without redrawing route
-                                const directDist = haversine(
-                                    currentLocation.lat, currentLocation.lng,
-                                    currentDestination.lat, currentDestination.lng
-                                );
-                                updateMetrics(directDist);
-                            }
-                        }
+                    // Navigation logic
+                    if (currentDestination && isNavigating) {
+                        // Update remaining distance metric
+                        const remainingDist = haversine(
+                            currentLocation.lat, currentLocation.lng,
+                            currentDestination.lat, currentDestination.lng
+                        );
+                        updateMetrics(remainingDist);
                         
-                        // Check for arrival
-                        if (isNavigating && haversine(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng) < 20) {
+                        // Check if arrived
+                        if (remainingDist < 20) {
                             isNavigating = false;
                             setFollowMode(false);
                             statusDiv.innerHTML = "Arrived!";
                             if (window.navigator.vibrate) window.navigator.vibrate(200);
                             sheet.classList.add('expanded');
-                            fetchRoute(true);
+                            offRouteBadge.style.display = 'none';
+                            if (dashedRouteLayer) {
+                                map.removeLayer(dashedRouteLayer);
+                                dashedRouteLayer = null;
+                            }
+                            return;
                         }
+                        
+                        // Check if off route (30m threshold)
+                        const now = Date.now();
+                        const isOff = checkOffRoute();
+                        
+                        if (isOff) {
+                            offRouteCounter++;
+                            drawDashedLineToRoute();
+                            
+                            // Reroute after 3 consecutive off-route detections (about 15 seconds)
+                            if (offRouteCounter >= 3 && (now - lastRerouteTime) > 10000) {
+                                lastRerouteTime = now;
+                                rerouteFromCurrentPosition();
+                                offRouteCounter = 0;
+                            } else if (!isOffRouteFlag) {
+                                // First time off-route, show visual indicator
+                                if (routeLayer) {
+                                    routeLayer.setStyle({ color: "#F59E0B" });
+                                }
+                                isOffRouteFlag = true;
+                            }
+                        } else {
+                            // Back on route
+                            if (offRouteCounter > 0) offRouteCounter--;
+                            if (dashedRouteLayer) {
+                                map.removeLayer(dashedRouteLayer);
+                                dashedRouteLayer = null;
+                            }
+                            if (isOffRouteFlag) {
+                                if (routeLayer) {
+                                    routeLayer.setStyle({ color: "#C8F135" });
+                                }
+                                isOffRouteFlag = false;
+                            }
+                        }
+                    } else if (currentDestination && !isNavigating) {
+                        // Not navigating but has destination - just update metrics
+                        const dist = haversine(
+                            currentLocation.lat, currentLocation.lng,
+                            currentDestination.lat, currentDestination.lng
+                        );
+                        updateMetrics(dist);
                     }
                 },
                 (error) => {
@@ -1197,7 +1329,7 @@
             document.getElementById('sheetModeIcon').innerHTML = isWalk ? 'directions_walk' : 'directions_car';
             document.getElementById('sheetModeTitle').innerHTML = isWalk ? 'Walking route' : 'Driving route';
             document.getElementById('compactMode').innerHTML = `<span class="icon icon-sm">${isWalk ? 'directions_walk' : 'directions_car'}</span>`;
-            if (currentLocation && currentDestination) fetchRoute(true);
+            if (currentLocation && currentDestination) fetchRoute(false, currentLocation);
         });
 
         document.getElementById('zoomInBtn').addEventListener('click', () => map.zoomIn());
