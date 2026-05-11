@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
-    <title>Campus Connect · University of Limpopo</title>
+    <title>Campus Connect</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -478,10 +478,12 @@
         .btn-stop:hover  { background: var(--surface-2); }
         .btn-stop:active { transform: scale(0.97); }
         
+        /* Hide stop button by default */
         .btn-stop {
             display: none;
         }
         
+        /* Show stop button only when navigating */
         .btn-stop.visible {
             display: flex;
         }
@@ -591,6 +593,7 @@
             color: var(--accent-text);
         }
 
+        /* Off-route warning badge */
         .off-route-badge {
             position: fixed;
             bottom: calc(var(--sheet-peek) + 100px);
@@ -630,92 +633,51 @@
                 padding-bottom: 80px;
             }
 
+            /* Hide mobile-only elements on desktop */
             .sheet-handle-row,
             .compact-row { display: none !important; }
             
+            /* Hide close button on desktop */
             .close-btn {
                 display: none !important;
             }
 
+            /* Always show sheet body on desktop */
             .sheet-body {
                 display: block !important;
                 flex: 1;
                 padding: 0 20px 20px;
             }
 
+            /* Sidebar search replaces top bar on desktop */
             .top-bar {
-                position: relative;
-                top: auto;
-                left: auto;
-                right: auto;
-                width: 100%;
-        margin-top: 0;
-                margin-bottom: 0;
-                flex-direction: column;
-                background: transparent;
-                gap: 12px;
-                padding: 0 0 16px 0;
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                width: calc(var(--sidebar-w) - 40px);
+                z-index: 200;
             }
 
-            .desktop-brand-header {
-                display: flex;
-                align-items: center;
-                gap: 12px;
-                margin-bottom: 18px;
-                margin-top: 8px;
-                width: 100%;
-                border-bottom: 2px solid var(--accent-dim);
-                padding-bottom: 12px;
-            }
-            .desktop-brand-header .brand-icon {
-                background: var(--accent);
-                width: 42px;
-                height: 42px;
-                border-radius: 16px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                box-shadow: 0 6px 12px rgba(0,0,0,0.08);
-            }
-            .desktop-brand-header .brand-icon .icon {
-                font-size: 24px;
-                color: #111D00;
-                font-variation-settings: "FILL" 1;
-            }
-            .desktop-brand-header .brand-text h1 {
-                font-size: 20px;
-                font-weight: 800;
-                letter-spacing: -0.3px;
-                color: var(--text-1);
-                line-height: 1.2;
-            }
-            .desktop-brand-header .brand-text p {
-                font-size: 11px;
-                font-weight: 600;
-                color: var(--accent-text);
-                margin-top: 2px;
-            }
-
-            .search-input {
-                height: 50px;
-                font-size: 14px;
-            }
-
+            /* Search suggestions confined to sidebar */
             .suggestions-dropdown {
                 width: 100%;
             }
 
+            /* Map controls — right side of map */
             .map-controls {
                 left: auto;
                 right: 20px;
                 bottom: 32px;
             }
 
+            /* Mode pill — above sheet, on map */
             .mode-pill {
                 left: calc(var(--sidebar-w) + 20px);
                 bottom: 32px;
             }
 
+            /* Bottom nav becomes sidebar nav */
             .bottom-nav {
                 top: auto;
                 left: 0;
@@ -734,10 +696,19 @@
                 padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 10px);
             }
 
-            .sidebar-brand { display: none; }
+            /* Brand wordmark in sidebar */
+            .sidebar-brand {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 24px 20px 0;
+                margin-top: 80px;
+            }
         }
 
+        /* On mobile, hide sidebar brand */
         .sidebar-brand { display: none; }
+
         .brand-dot {
             width: 28px;
             height: 28px;
@@ -787,7 +758,7 @@
     
     <div class="off-route-badge" id="offRouteBadge">⚠️ Off route • Rerouting...</div>
 
-    <div class="top-bar" id="topBarContainer">
+    <div class="top-bar">
         <div class="search-wrap">
             <span class="icon icon-sm search-icon-left">search</span>
             <input type="text" class="search-input" id="searchInput"
@@ -919,6 +890,7 @@
         let intersectionMarker = null;
         let dashedRouteLayer = null;
         
+        // Route management
         let isFetchingRoute = false;
         let currentRouteRequestId = 0;
         let offRouteCounter = 0;
@@ -944,9 +916,18 @@
         }
 
         function clearRouteLayer() {
-            if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
-            if (intersectionMarker) { map.removeLayer(intersectionMarker); intersectionMarker = null; }
-            if (dashedRouteLayer) { map.removeLayer(dashedRouteLayer); dashedRouteLayer = null; }
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+                routeLayer = null;
+            }
+            if (intersectionMarker) {
+                map.removeLayer(intersectionMarker);
+                intersectionMarker = null;
+            }
+            if (dashedRouteLayer) {
+                map.removeLayer(dashedRouteLayer);
+                dashedRouteLayer = null;
+            }
         }
 
         function updateMetrics(distance) {
@@ -960,88 +941,223 @@
 
         function checkOffRoute() {
             if (!routeLayer || !currentLocation || !isNavigating) return false;
+            
             const routePath = routeLayer.getLatLngs();
             if (!routePath || routePath.length === 0) return false;
+            
             let minDistance = Infinity;
             for (let i = 0; i < routePath.length; i++) {
                 const point = routePath[i];
-                const dist = haversine(currentLocation.lat, currentLocation.lng, point.lat, point.lng);
+                const dist = haversine(
+                    currentLocation.lat, currentLocation.lng,
+                    point.lat, point.lng
+                );
                 minDistance = Math.min(minDistance, dist);
             }
+            
             return minDistance > 30;
         }
 
         function drawDashedLineToRoute() {
             if (!routeLayer || !currentLocation || !isNavigating) return;
-            if (dashedRouteLayer) { map.removeLayer(dashedRouteLayer); dashedRouteLayer = null; }
+            
+            if (dashedRouteLayer) {
+                map.removeLayer(dashedRouteLayer);
+                dashedRouteLayer = null;
+            }
+            
             const routePath = routeLayer.getLatLngs();
             if (!routePath || routePath.length === 0) return;
+            
             let closestPoint = null;
             let minDistance = Infinity;
             for (let i = 0; i < routePath.length; i++) {
                 const point = routePath[i];
-                const dist = haversine(currentLocation.lat, currentLocation.lng, point.lat, point.lng);
-                if (dist < minDistance) { minDistance = dist; closestPoint = point; }
+                const dist = haversine(
+                    currentLocation.lat, currentLocation.lng,
+                    point.lat, point.lng
+                );
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    closestPoint = point;
+                }
             }
+            
             if (closestPoint && minDistance > 5) {
-                dashedRouteLayer = L.polyline([[currentLocation.lat, currentLocation.lng], [closestPoint.lat, closestPoint.lng]],
-                    { color: "#F59E0B", weight: 3, opacity: 0.8, dashArray: "8, 8" }).addTo(map);
+                dashedRouteLayer = L.polyline(
+                    [[currentLocation.lat, currentLocation.lng], [closestPoint.lat, closestPoint.lng]],
+                    { color: "#F59E0B", weight: 3, opacity: 0.8, dashArray: "8, 8", lineCap: 'round' }
+                ).addTo(map);
             }
         }
 
         function rerouteFromCurrentPosition() {
             if (!currentLocation || !currentDestination || !isNavigating) return;
             if (isFetchingRoute) return;
+            
             offRouteBadge.style.display = 'block';
-            setTimeout(() => { offRouteBadge.style.display = 'none'; }, 3000);
+            setTimeout(() => {
+                offRouteBadge.style.display = 'none';
+            }, 3000);
+            
             fetchRoute(true, currentLocation);
         }
 
         function fetchRoute(forceReroute = false, startPoint = null) {
             if (!currentDestination) return;
+            
             const routeStart = startPoint || currentLocation;
             if (!routeStart) return;
+            
             if (isFetchingRoute) return;
+            
             isFetchingRoute = true;
+            
             const thisRequestId = ++currentRouteRequestId;
+            
             const url = `/api/route?startLat=${routeStart.lat}&startLng=${routeStart.lng}&endLat=${currentDestination.lat}&endLng=${currentDestination.lng}&mode=${currentMode}`;
-            fetch(url).then(response => response.json()).then(data => {
-                if (thisRequestId !== currentRouteRequestId) { isFetchingRoute = false; return; }
-                if (data.path && data.path.length > 0) {
-                    if (routeLayer) map.removeLayer(routeLayer);
-                    if (dashedRouteLayer) map.removeLayer(dashedRouteLayer);
-                    const latlngs = data.path.map(p => [p[0], p[1]]);
-                    routeLayer = L.polyline(latlngs, { color: forceReroute ? "#F59E0B" : "#C8F135", weight: 5, opacity: 0.95 }).addTo(map);
-                    if (data.intersectionPoint) {
-                        if (intersectionMarker) map.removeLayer(intersectionMarker);
-                        intersectionMarker = L.circleMarker([data.intersectionPoint[0], data.intersectionPoint[1]], { radius: 8, fillColor: "#C8F135", color: "#111D00", weight: 2, fillOpacity: 1 }).addTo(map);
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (thisRequestId !== currentRouteRequestId) {
+                        isFetchingRoute = false;
+                        return;
                     }
-                    updateMetrics(data.distance);
-                    if (forceReroute) setTimeout(() => { if (routeLayer) routeLayer.setStyle({ color: "#C8F135" }); offRouteCounter = 0; isOffRouteFlag = false; }, 5000);
-                }
-                isFetchingRoute = false;
-            }).catch(err => { console.error("Route error:", err); isFetchingRoute = false; });
+                    
+                    if (data.path && data.path.length > 0) {
+                        if (routeLayer) {
+                            map.removeLayer(routeLayer);
+                            routeLayer = null;
+                        }
+                        if (dashedRouteLayer) {
+                            map.removeLayer(dashedRouteLayer);
+                            dashedRouteLayer = null;
+                        }
+                        
+                        const latlngs = data.path.map(p => [p[0], p[1]]);
+                        
+                        routeLayer = L.polyline(latlngs, {
+                            color: forceReroute ? "#F59E0B" : "#C8F135",
+                            weight: 5,
+                            opacity: 0.95,
+                            lineCap: 'round'
+                        }).addTo(map);
+                        
+                        if (data.intersectionPoint) {
+                            if (intersectionMarker) {
+                                map.removeLayer(intersectionMarker);
+                            }
+                            intersectionMarker = L.circleMarker(
+                                [data.intersectionPoint[0], data.intersectionPoint[1]],
+                                { radius: 8, fillColor: "#C8F135", color: "#111D00", weight: 2, fillOpacity: 1 }
+                            ).addTo(map);
+                        }
+                        
+                        updateMetrics(data.distance);
+                        
+                        if (forceReroute) {
+                            setTimeout(() => {
+                                if (routeLayer) {
+                                    routeLayer.setStyle({ color: "#C8F135" });
+                                }
+                                offRouteCounter = 0;
+                                isOffRouteFlag = false;
+                            }, 5000);
+                        }
+                    }
+                    isFetchingRoute = false;
+                })
+                .catch(err => {
+                    console.error("Route error:", err);
+                    isFetchingRoute = false;
+                });
         }
 
         function setDestination(dest) {
-            clearRouteLayer(); offRouteCounter = 0; isOffRouteFlag = false;
+            clearRouteLayer();
+            offRouteCounter = 0;
+            isOffRouteFlag = false;
+            
             currentDestination = dest;
             document.getElementById('destinationLabel').innerHTML = dest.name;
             document.getElementById('compactDest').innerHTML = dest.name;
+            
             if (destMarker) map.removeLayer(destMarker);
-            const destIcon = L.divIcon({ html: `<div style="background:#C8F135; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 5px rgba(200,241,53,0.25); border:2px solid #111D00;"><span class="icon" style="color:#111D00; font-size:16px;">location_on</span></div>`, iconSize: [36, 36], iconAnchor: [18, 18] });
+            const destIcon = L.divIcon({
+                html: `<div style="background:#C8F135; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 5px rgba(200,241,53,0.25), 0 2px 12px rgba(0,0,0,0.25); border:2px solid #111D00;"><span class="icon" style="color:#111D00; font-size:16px; font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 1;">location_on</span></div>`,
+                iconSize: [36, 36],
+                iconAnchor: [18, 18]
+            });
             destMarker = L.marker([dest.lat, dest.lng], { icon: destIcon }).addTo(map);
+            
             if (currentLocation) fetchRoute(false, currentLocation);
-            sheet.classList.remove('inactive'); sheet.classList.add('expanded');
+            sheet.classList.remove('inactive');
+            sheet.classList.add('expanded');
         }
 
-        function clearDestination() { clearRouteLayer(); offRouteCounter = 0; isOffRouteFlag = false; currentDestination = null; if(destMarker){ map.removeLayer(destMarker); destMarker=null; } document.getElementById('destinationLabel').innerHTML = "Select destination"; document.getElementById('compactDest').innerHTML = "Select destination"; document.getElementById('distanceVal').innerHTML = "—"; document.getElementById('timeVal').innerHTML = "—"; document.getElementById('compactDistance').innerHTML = "—"; sheet.classList.add('inactive'); }
-        function startNavigation() { if(!currentLocation) return; if(!currentDestination){ sheet.classList.add('expanded'); searchInput.focus(); return; } isNavigating = true; offRouteCounter = 0; isOffRouteFlag = false; stopNavBtn.classList.add('visible'); fetchRoute(false, currentLocation); map.setView([currentLocation.lat, currentLocation.lng], 18); sheet.classList.remove('expanded'); sheet.classList.add('collapsed'); }
-        function stopNavigation() { isNavigating = false; setFollowMode(false); clearDestination(); offRouteBadge.style.display = 'none'; if(dashedRouteLayer) map.removeLayer(dashedRouteLayer); stopNavBtn.classList.remove('visible'); }
-        function setFollowMode(enabled) { followMode = enabled; if(followMode){ followBtn.classList.add('follow-active'); if(currentLocation) map.setView([currentLocation.lat, currentLocation.lng], map.getZoom()); } else { followBtn.classList.remove('follow-active'); } }
+        function clearDestination() {
+            clearRouteLayer();
+            offRouteCounter = 0;
+            isOffRouteFlag = false;
+            
+            currentDestination = null;
+            
+            if (destMarker) { map.removeLayer(destMarker); destMarker = null; }
+            
+            document.getElementById('destinationLabel').innerHTML = "Select destination";
+            document.getElementById('compactDest').innerHTML = "Select destination";
+            document.getElementById('distanceVal').innerHTML = "—";
+            document.getElementById('timeVal').innerHTML = "—";
+            document.getElementById('compactDistance').innerHTML = "—";
+            sheet.classList.add('inactive');
+        }
+
+        function startNavigation() {
+            if (!currentLocation) return;
+            if (!currentDestination) { 
+                sheet.classList.add('expanded'); 
+                searchInput.focus(); 
+                return; 
+            }
+            isNavigating = true;
+            offRouteCounter = 0;
+            isOffRouteFlag = false;
+            
+            // Show stop button
+            stopNavBtn.classList.add('visible');
+            
+            fetchRoute(false, currentLocation);
+            map.setView([currentLocation.lat, currentLocation.lng], 18);
+            sheet.classList.remove('expanded');
+            sheet.classList.add('collapsed');
+        }
+
+        function stopNavigation() { 
+            isNavigating = false; 
+            setFollowMode(false); 
+            clearDestination();
+            offRouteBadge.style.display = 'none';
+            if (dashedRouteLayer) {
+                map.removeLayer(dashedRouteLayer);
+                dashedRouteLayer = null;
+            }
+            // Hide stop button
+            stopNavBtn.classList.remove('visible');
+        }
+        
+        function setFollowMode(enabled) {
+            followMode = enabled;
+            if (followMode) {
+                followBtn.classList.add('follow-active');
+                if (currentLocation) map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
+            } else {
+                followBtn.classList.remove('follow-active');
+            }
+        }
+        
         function toggleFollowMode() { setFollowMode(!followMode); }
 
-        // Campus locations - single clean array
         const campusBuildings = [
             { lat: -23.8865878, lng: 29.7410106, name: "Maths Building" },
             { lat: -23.8870926, lng: 29.7402418, name: "Digital Innovation Lab" },
@@ -1055,31 +1171,227 @@
             { lat: -23.8868133, lng: 29.7363624, name: "Mashobane Res" }
         ];
 
-        function getSuggestions(query) { if(!query) return []; const q = query.toLowerCase(); return campusBuildings.filter(b => b.name.toLowerCase().includes(q)).map(b => ({ ...b, distance: currentLocation ? haversine(currentLocation.lat, currentLocation.lng, b.lat, b.lng) : null })); }
-        function showSuggestions(suggestions) { if(suggestions.length===0){ suggestionsDropdown.classList.remove('show'); return; } suggestionsDropdown.innerHTML = suggestions.map(b => `<div class="suggestion-item" data-lat="${b.lat}" data-lng="${b.lng}" data-name="${b.name.replace(/'/g, "\\'")}"><div class="sug-dot"></div><div class="suggestion-name">${b.name}</div>${b.distance ? `<span class="suggestion-dist">${b.distance<1000?Math.round(b.distance)+'m':(b.distance/1000).toFixed(1)+'km'}</span>` : ''}</div>`).join(''); suggestionsDropdown.classList.add('show'); document.querySelectorAll('.suggestion-item').forEach(item=>{ item.addEventListener('click',()=>{ setDestination({ lat: parseFloat(item.dataset.lat), lng: parseFloat(item.dataset.lng), name: item.dataset.name }); searchInput.value = item.dataset.name; suggestionsDropdown.classList.remove('show'); }); }); }
-        
-        function initMap() { map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-23.88674, 29.73942], 18); L.tileLayer('https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 19 }).addTo(map); }
-        
-        function startGPS() { if(!navigator.geolocation){ statusDiv.innerHTML = "GPS not supported"; return; } const led = document.getElementById('gpsLed'); let lastRerouteTime = 0; watchId = navigator.geolocation.watchPosition(pos => { const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude }; currentLocation = newLoc; document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`; led.classList.add('live'); if(!userMarker){ userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], { icon: L.divIcon({ html: `<div style="background:#C8F135; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 5px rgba(200,241,53,0.3); border:2px solid #111D00;"><span class="icon" style="color:#111D00; font-size:15px;">${currentMode==="walk"?"directions_walk":"directions_car"}</span></div>`, iconSize: [32,32], iconAnchor:[16,16] }) }).addTo(map); } else { userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]); } if(followMode && currentLocation) map.setView([currentLocation.lat, currentLocation.lng], map.getZoom()); if(currentDestination && isNavigating){ const remainingDist = haversine(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng); updateMetrics(remainingDist); if(remainingDist<20){ isNavigating=false; setFollowMode(false); stopNavBtn.classList.remove('visible'); statusDiv.innerHTML="Arrived!"; if(window.navigator.vibrate) window.navigator.vibrate(200); sheet.classList.add('expanded'); offRouteBadge.style.display='none'; if(dashedRouteLayer) map.removeLayer(dashedRouteLayer); return; } const isOff = checkOffRoute(); const now = Date.now(); if(isOff){ offRouteCounter++; drawDashedLineToRoute(); if(offRouteCounter>=3 && (now-lastRerouteTime)>10000){ lastRerouteTime=now; rerouteFromCurrentPosition(); offRouteCounter=0; } else if(!isOffRouteFlag){ if(routeLayer) routeLayer.setStyle({ color:"#F59E0B" }); isOffRouteFlag=true; } } else { if(offRouteCounter>0) offRouteCounter--; if(dashedRouteLayer){ map.removeLayer(dashedRouteLayer); dashedRouteLayer=null; } if(isOffRouteFlag){ if(routeLayer) routeLayer.setStyle({ color:"#C8F135" }); isOffRouteFlag=false; } } } else if(currentDestination && !isNavigating){ const dist = haversine(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng); updateMetrics(dist); } }, err => { led.classList.remove('live'); statusDiv.innerHTML = err.code===1?"Location permission denied":"GPS error"; }, { enableHighAccuracy: true, maximumAge: 6000, timeout:10000 }); }
-
-        function injectDesktopBrand() {
-            const topBar = document.getElementById('topBarContainer');
-            if (!topBar) return;
-            if (topBar.querySelector('.desktop-brand-header')) return;
-            const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-            if (!isDesktop) return;
-            const brandDiv = document.createElement('div');
-            brandDiv.className = 'desktop-brand-header';
-            brandDiv.innerHTML = `<div class="brand-icon"><span class="icon">campus</span></div><div class="brand-text"><h1>Campus Connect</h1><p>University of Limpopo · wayfinder</p></div>`;
-            topBar.insertBefore(brandDiv, topBar.firstChild);
+        function getSuggestions(query) {
+            if (!query) return [];
+            const q = query.toLowerCase();
+            return campusBuildings.filter(b => b.name.toLowerCase().includes(q)).map(b => ({
+                ...b,
+                distance: currentLocation ? haversine(currentLocation.lat, currentLocation.lng, b.lat, b.lng) : null
+            }));
         }
 
-        // Event listeners
-        document.getElementById('modeToggle').addEventListener('click', () => { currentMode = currentMode==="walk"?"drive":"walk"; const isWalk = currentMode==="walk"; document.getElementById('modeIcon').innerHTML = isWalk?'directions_walk':'directions_car'; document.getElementById('modeText').innerHTML = isWalk?'Walk':'Drive'; document.getElementById('sheetModeIcon').innerHTML = isWalk?'directions_walk':'directions_car'; document.getElementById('compactMode').innerHTML = `<span class="icon icon-sm">${isWalk?'directions_walk':'directions_car'}</span>`; if(currentLocation && currentDestination) fetchRoute(false, currentLocation); });
-        document.getElementById('zoomInBtn').addEventListener('click', () => map.zoomIn()); document.getElementById('zoomOutBtn').addEventListener('click', () => map.zoomOut()); followBtn.addEventListener('click', toggleFollowMode); document.getElementById('startNavBtn').addEventListener('click', startNavigation); document.getElementById('stopNavBtn').addEventListener('click', stopNavigation); document.getElementById('navTabBtn').addEventListener('click', () => { if(!sheet.classList.contains('inactive')){ sheet.classList.remove('collapsed'); sheet.classList.add('expanded'); } }); document.getElementById('handleArea').addEventListener('click', () => { if(sheet.classList.contains('inactive')) return; if(sheet.classList.contains('expanded')){ sheet.classList.remove('expanded'); sheet.classList.add('collapsed'); } else { sheet.classList.remove('collapsed'); sheet.classList.add('expanded'); } }); document.getElementById('compactInfo').addEventListener('click', () => { if(!sheet.classList.contains('inactive')){ sheet.classList.remove('collapsed'); sheet.classList.add('expanded'); } }); document.getElementById('closeSheetBtn').addEventListener('click', () => { sheet.classList.remove('expanded'); sheet.classList.add('collapsed'); });
-        let searchTimeout; searchInput.addEventListener('input', (e) => { clearSearchBtn.style.display = e.target.value ? 'flex' : 'none'; if(searchTimeout) clearTimeout(searchTimeout); searchTimeout = setTimeout(() => { showSuggestions(getSuggestions(e.target.value.toLowerCase())); }, 150); }); clearSearchBtn.addEventListener('click', () => { searchInput.value=''; clearSearchBtn.style.display='none'; suggestionsDropdown.classList.remove('show'); searchInput.focus(); }); document.addEventListener('click', (e) => { if(!searchInput.contains(e.target) && !suggestionsDropdown.contains(e.target)) suggestionsDropdown.classList.remove('show'); });
-        window.addEventListener('load', () => { initMap(); startGPS(); injectDesktopBrand(); });
-        window.addEventListener('beforeunload', () => { if(watchId) navigator.geolocation.clearWatch(watchId); });
+        function showSuggestions(suggestions) {
+            if (suggestions.length === 0) { suggestionsDropdown.classList.remove('show'); return; }
+            suggestionsDropdown.innerHTML = suggestions.map(b => `
+                <div class="suggestion-item" data-lat="${b.lat}" data-lng="${b.lng}" data-name="${b.name.replace(/'/g, "\\'")}">
+                    <div class="sug-dot"></div>
+                    <div class="suggestion-name">${b.name}</div>
+                    ${b.distance ? `<span class="suggestion-dist">${b.distance < 1000 ? Math.round(b.distance) + 'm' : (b.distance/1000).toFixed(1) + 'km'}</span>` : ''}
+                </div>`).join('');
+            suggestionsDropdown.classList.add('show');
+            document.querySelectorAll('.suggestion-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    setDestination({ lat: parseFloat(item.dataset.lat), lng: parseFloat(item.dataset.lng), name: item.dataset.name });
+                    searchInput.value = item.dataset.name;
+                    suggestionsDropdown.classList.remove('show');
+                });
+            });
+        }
+
+        function checkNetworkStatus() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.loaded) {
+                        statusDiv.innerHTML = `GPS active · ${data.nodeCount} nodes ready`;
+                        if (currentLocation && currentDestination && !isNavigating) fetchRoute(false, currentLocation);
+                    } else {
+                        statusDiv.innerHTML = "Waiting for network…";
+                        setTimeout(checkNetworkStatus, 2000);
+                    }
+                })
+                .catch(() => {
+                    statusDiv.innerHTML = "Connecting to server…";
+                    setTimeout(checkNetworkStatus, 3000);
+                });
+        }
+
+        function initMap() {
+            map = L.map('map', { zoomControl: false, attributionControl: false })
+                   .setView([-23.88674, 29.73942], 18);
+            L.tileLayer('https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 19 }).addTo(map);
+        }
+
+        function startGPS() {
+            if (!navigator.geolocation) { statusDiv.innerHTML = "GPS not supported"; return; }
+            const led = document.getElementById('gpsLed');
+            let lastRerouteTime = 0;
+            
+            watchId = navigator.geolocation.watchPosition(
+                (pos) => {
+                    const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    currentLocation = newLoc;
+                    document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+                    led.classList.add('live');
+                    
+                    if (userMarker) {
+                        userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
+                    } else {
+                        userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], {
+                            icon: L.divIcon({
+                                html: `<div style="background:#C8F135; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 5px rgba(200,241,53,0.3); border:2px solid #111D00;"><span class="icon" style="color:#111D00; font-size:15px; font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 1;">${currentMode === "walk" ? "directions_walk" : "directions_car"}</span></div>`,
+                                iconSize: [32, 32],
+                                iconAnchor: [16, 16]
+                            })
+                        }).addTo(map);
+                    }
+                    
+                    if (followMode && currentLocation) {
+                        map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
+                    }
+                    
+                    if (currentDestination && isNavigating) {
+                        const remainingDist = haversine(
+                            currentLocation.lat, currentLocation.lng,
+                            currentDestination.lat, currentDestination.lng
+                        );
+                        updateMetrics(remainingDist);
+                        
+                        if (remainingDist < 20) {
+                            isNavigating = false;
+                            setFollowMode(false);
+                            stopNavBtn.classList.remove('visible');
+                            statusDiv.innerHTML = "Arrived!";
+                            if (window.navigator.vibrate) window.navigator.vibrate(200);
+                            sheet.classList.add('expanded');
+                            offRouteBadge.style.display = 'none';
+                            if (dashedRouteLayer) {
+                                map.removeLayer(dashedRouteLayer);
+                                dashedRouteLayer = null;
+                            }
+                            return;
+                        }
+                        
+                        const isOff = checkOffRoute();
+                        const now = Date.now();
+                        
+                        if (isOff) {
+                            offRouteCounter++;
+                            drawDashedLineToRoute();
+                            
+                            if (offRouteCounter >= 3 && (now - lastRerouteTime) > 10000) {
+                                lastRerouteTime = now;
+                                rerouteFromCurrentPosition();
+                                offRouteCounter = 0;
+                            } else if (!isOffRouteFlag) {
+                                if (routeLayer) {
+                                    routeLayer.setStyle({ color: "#F59E0B" });
+                                }
+                                isOffRouteFlag = true;
+                            }
+                        } else {
+                            if (offRouteCounter > 0) offRouteCounter--;
+                            if (dashedRouteLayer) {
+                                map.removeLayer(dashedRouteLayer);
+                                dashedRouteLayer = null;
+                            }
+                            if (isOffRouteFlag) {
+                                if (routeLayer) {
+                                    routeLayer.setStyle({ color: "#C8F135" });
+                                }
+                                isOffRouteFlag = false;
+                            }
+                        }
+                    } else if (currentDestination && !isNavigating) {
+                        const dist = haversine(
+                            currentLocation.lat, currentLocation.lng,
+                            currentDestination.lat, currentDestination.lng
+                        );
+                        updateMetrics(dist);
+                    }
+                },
+                (error) => {
+                    led.classList.remove('live');
+                    statusDiv.innerHTML = error.code === 1 ? "Location permission denied" : "GPS error";
+                },
+                { enableHighAccuracy: true, maximumAge: 6000, timeout: 10000 }
+            );
+        }
+
+        // Event Listeners
+        document.getElementById('modeToggle').addEventListener('click', () => {
+            currentMode = currentMode === "walk" ? "drive" : "walk";
+            const isWalk = currentMode === "walk";
+            document.getElementById('modeIcon').innerHTML = isWalk ? 'directions_walk' : 'directions_car';
+            document.getElementById('modeText').innerHTML = isWalk ? 'Walk' : 'Drive';
+            document.getElementById('sheetModeIcon').innerHTML = isWalk ? 'directions_walk' : 'directions_car';
+            document.getElementById('compactMode').innerHTML = `<span class="icon icon-sm">${isWalk ? 'directions_walk' : 'directions_car'}</span>`;
+            if (currentLocation && currentDestination) fetchRoute(false, currentLocation);
+        });
+
+        document.getElementById('zoomInBtn').addEventListener('click', () => map.zoomIn());
+        document.getElementById('zoomOutBtn').addEventListener('click', () => map.zoomOut());
+        followBtn.addEventListener('click', toggleFollowMode);
+        document.getElementById('startNavBtn').addEventListener('click', startNavigation);
+        document.getElementById('stopNavBtn').addEventListener('click', stopNavigation);
+        document.getElementById('navTabBtn').addEventListener('click', () => {
+            if (!sheet.classList.contains('inactive')) {
+                sheet.classList.remove('collapsed');
+                sheet.classList.add('expanded');
+            }
+        });
+        document.getElementById('handleArea').addEventListener('click', () => {
+            if (sheet.classList.contains('inactive')) return;
+            if (sheet.classList.contains('expanded')) {
+                sheet.classList.remove('expanded');
+                sheet.classList.add('collapsed');
+            } else {
+                sheet.classList.remove('collapsed');
+                sheet.classList.add('expanded');
+            }
+        });
+        document.getElementById('compactInfo').addEventListener('click', () => {
+            if (!sheet.classList.contains('inactive')) {
+                sheet.classList.remove('collapsed');
+                sheet.classList.add('expanded');
+            }
+        });
+        document.getElementById('closeSheetBtn').addEventListener('click', () => {
+            sheet.classList.remove('expanded');
+            sheet.classList.add('collapsed');
+        });
+
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearSearchBtn.style.display = e.target.value ? 'flex' : 'none';
+            if (searchTimeout) clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                showSuggestions(getSuggestions(e.target.value.toLowerCase()));
+            }, 150);
+        });
+
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            clearSearchBtn.style.display = 'none';
+            suggestionsDropdown.classList.remove('show');
+            searchInput.focus();
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!searchInput.contains(e.target) && !suggestionsDropdown.contains(e.target)) {
+                suggestionsDropdown.classList.remove('show');
+            }
+        });
+
+        window.addEventListener('load', () => {
+            initMap();
+            startGPS();
+            checkNetworkStatus();
+        });
+
+        window.addEventListener('beforeunload', () => {
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+        });
     </script>
 </body>
 </html>
