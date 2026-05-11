@@ -478,12 +478,10 @@
         .btn-stop:hover  { background: var(--surface-2); }
         .btn-stop:active { transform: scale(0.97); }
         
-        /* Stop button hidden by default */
         .btn-stop {
             display: none;
         }
         
-        /* Show stop button only when navigating */
         .btn-stop.visible {
             display: flex;
         }
@@ -611,7 +609,7 @@
             white-space: nowrap;
         }
 
-        /* DESKTOP OVERRIDES - KEPT EXACTLY AS BEFORE */
+        /* DESKTOP OVERRIDES */
         @media (min-width: 768px) {
             .sheet {
                 top: 0;
@@ -642,13 +640,20 @@
                 padding: 0 20px 20px;
             }
 
+            /* Search bar becomes part of sidebar flow */
             .top-bar {
-                position: absolute;
-                top: 20px;
-                left: 20px;
-                right: 20px;
-                width: calc(var(--sidebar-w) - 40px);
-                z-index: 200;
+                position: relative;
+                top: 0;
+                left: 0;
+                right: 0;
+                width: 100%;
+                padding: 0 20px 0 20px;
+                margin-top: 0;
+                margin-bottom: 20px;
+            }
+
+            .search-wrap {
+                width: 100%;
             }
 
             .suggestions-dropdown {
@@ -685,7 +690,7 @@
             }
 
             .sheet-body > .sheet-top-row {
-                margin-top: 90px;
+                margin-top: 0;
             }
 
             .sidebar-brand {
@@ -693,10 +698,10 @@
                 align-items: center;
                 gap: 10px;
                 padding: 24px 20px 0;
-                margin-top: 90px;
+                margin-top: 0;
+                margin-bottom: 20px;
             }
             
-            /* Hide close button on desktop */
             .close-btn {
                 display: none !important;
             }
