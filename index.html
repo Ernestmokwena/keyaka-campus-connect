@@ -344,7 +344,7 @@
 
         .sheet-body {
             display: none;
-            padding: 0 20px 32px;
+            padding: 0 20px 20px;
         }
         .sheet.expanded .sheet-body { display: block; }
 
@@ -478,10 +478,12 @@
         .btn-stop:hover  { background: var(--surface-2); }
         .btn-stop:active { transform: scale(0.97); }
         
+        /* Hide stop button by default */
         .btn-stop {
             display: none;
         }
         
+        /* Show stop button only when navigating */
         .btn-stop.visible {
             display: flex;
         }
@@ -524,11 +526,10 @@
             padding-bottom: 2px;
         }
         .sheet-title-text {
-            font-size: 13px;
+            font-size: 18px;
             font-weight: 800;
-            letter-spacing: 0.06em;
-            text-transform: uppercase;
-            color: var(--text-2);
+            color: var(--text-1);
+            letter-spacing: -0.01em;
         }
         .close-btn {
             width: 32px;
@@ -592,6 +593,7 @@
             color: var(--accent-text);
         }
 
+        /* Off-route warning badge */
         .off-route-badge {
             position: fixed;
             bottom: calc(var(--sheet-peek) + 100px);
@@ -631,46 +633,51 @@
                 padding-bottom: 80px;
             }
 
+            /* Hide mobile-only elements on desktop */
             .sheet-handle-row,
             .compact-row { display: none !important; }
+            
+            /* Hide close button on desktop */
+            .close-btn {
+                display: none !important;
+            }
 
+            /* Always show sheet body on desktop */
             .sheet-body {
                 display: block !important;
                 flex: 1;
                 padding: 0 20px 20px;
             }
 
-            /* Search bar becomes part of sidebar flow */
+            /* Sidebar search replaces top bar on desktop */
             .top-bar {
-                position: relative;
-                top: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                padding: 0 20px 0 20px;
-                margin-top: 0;
-                margin-bottom: 20px;
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                width: calc(var(--sidebar-w) - 40px);
+                z-index: 200;
             }
 
-            .search-wrap {
-                width: 100%;
-            }
-
+            /* Search suggestions confined to sidebar */
             .suggestions-dropdown {
                 width: 100%;
             }
 
+            /* Map controls — right side of map */
             .map-controls {
                 left: auto;
                 right: 20px;
                 bottom: 32px;
             }
 
+            /* Mode pill — above sheet, on map */
             .mode-pill {
                 left: calc(var(--sidebar-w) + 20px);
                 bottom: 32px;
             }
 
+            /* Bottom nav becomes sidebar nav */
             .bottom-nav {
                 top: auto;
                 left: 0;
@@ -689,24 +696,17 @@
                 padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 10px);
             }
 
-            .sheet-body > .sheet-top-row {
-                margin-top: 0;
-            }
-
+            /* Brand wordmark in sidebar */
             .sidebar-brand {
                 display: flex;
                 align-items: center;
                 gap: 10px;
                 padding: 24px 20px 0;
-                margin-top: 0;
-                margin-bottom: 20px;
-            }
-            
-            .close-btn {
-                display: none !important;
+                margin-top: 80px;
             }
         }
 
+        /* On mobile, hide sidebar brand */
         .sidebar-brand { display: none; }
 
         .brand-dot {
@@ -739,7 +739,7 @@
         .divider {
             height: 1px;
             background: var(--border);
-            margin: 20px 0 0;
+            margin: 16px 0 0;
         }
 
         .leaflet-control-zoom        { display: none !important; }
@@ -890,6 +890,7 @@
         let intersectionMarker = null;
         let dashedRouteLayer = null;
         
+        // Route management
         let isFetchingRoute = false;
         let currentRouteRequestId = 0;
         let offRouteCounter = 0;
@@ -1123,6 +1124,7 @@
             offRouteCounter = 0;
             isOffRouteFlag = false;
             
+            // Show stop button
             stopNavBtn.classList.add('visible');
             
             fetchRoute(false, currentLocation);
@@ -1140,6 +1142,7 @@
                 map.removeLayer(dashedRouteLayer);
                 dashedRouteLayer = null;
             }
+            // Hide stop button
             stopNavBtn.classList.remove('visible');
         }
         
@@ -1315,6 +1318,7 @@
             );
         }
 
+        // Event Listeners
         document.getElementById('modeToggle').addEventListener('click', () => {
             currentMode = currentMode === "walk" ? "drive" : "walk";
             const isWalk = currentMode === "walk";
