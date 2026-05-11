@@ -1196,7 +1196,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.loaded) {
-                        statusDiv.innerHTML = `GPS active · ${data.nodeCount} nodes ready`;
+                        statusDiv.innerHTML = `GPS active ·`;
                         if (currentLocation && currentDestination && !isNavigating) fetchRoute(false, currentLocation);
                     } else {
                         statusDiv.innerHTML = "Waiting for network…";
