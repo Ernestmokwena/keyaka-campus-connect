@@ -114,6 +114,38 @@ let map;
             userMarker.setIcon(createUserMarkerIcon(bearing));
         }
 
+        function handleDeviceOrientation(event) {
+            let heading = null;
+            if (typeof event.webkitCompassHeading === 'number') {
+                heading = event.webkitCompassHeading;
+            } else if (typeof event.alpha === 'number') {
+                const screenAngle = window.screen.orientation?.angle || window.orientation || 0;
+                heading = 360 - event.alpha;
+                heading = (heading + screenAngle) % 360;
+            }
+            if (typeof heading === 'number' && !isNaN(heading)) {
+                currentHeading = heading;
+                updateBearingMarker();
+            }
+        }
+
+        function initHeadingSensors() {
+            if (typeof DeviceOrientationEvent === 'undefined') return;
+            const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
+            const addListener = () => window.addEventListener(eventName, handleDeviceOrientation, true);
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission()
+                    .then(permission => {
+                        if (permission === 'granted') addListener();
+                    })
+                    .catch(() => {
+                        // permission denied or unsupported
+                    });
+            } else {
+                addListener();
+            }
+        }
+
         function clearRouteLayer() {
             if (routeLayer) {
                 map.removeLayer(routeLayer);
@@ -586,6 +618,7 @@ let map;
         window.addEventListener('load', () => {
             initMap();
             startGPS();
+            initHeadingSensors();
             checkNetworkStatus();
         });
 
