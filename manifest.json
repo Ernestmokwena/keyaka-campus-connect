@@ -4,7 +4,7 @@
   "description": "Navigate your campus with ease. Real-time routing and navigation.",
   "start_url": "/",
   "scope": "/",
-  "display": "fullscreen",
+  "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#FAF2E5",
   "background_color": "#FAF2E5",
