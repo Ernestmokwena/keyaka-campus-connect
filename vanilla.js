@@ -631,6 +631,13 @@ let map;
             startGPS();
             initHeadingSensors();
             checkNetworkStatus();
+            
+            // Register service worker for offline support and PWA
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js').catch(() => {
+                    // Service worker registration failed - app will still work online
+                });
+            }
         });
 
         window.addEventListener('beforeunload', () => {
