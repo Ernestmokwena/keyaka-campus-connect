@@ -2,7 +2,7 @@
     // <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     //UI missing
 
-    // you may use the following color schemes to generate the UI
+    // you may use the following color schemes
             //     --bg:         #E8EDE2;
             // --glass:      rgba(255, 255, 255, 0.78);
             // --glass-hi:   rgba(255, 255, 255, 0.92);
@@ -448,7 +448,11 @@ let map;
         }
 
         function initMap() {
-            map = L.map('map', { zoomControl: false, attributionControl: false })
+            map = L.map('map', { 
+                zoomControl: false, 
+                attributionControl: false,
+                touchRotate: true  // Allow touch rotation
+            })
                    .setView([-23.88674, 29.73942], 18);
             L.tileLayer('https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 19 }).addTo(map);
         }
