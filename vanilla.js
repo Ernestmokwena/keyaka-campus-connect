@@ -1,6 +1,41 @@
-        let map;
+    // <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    // <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    //UI missing
+
+    // you may use the following color schemes to generate the UI
+            //     --bg:         #E8EDE2;
+            // --glass:      rgba(255, 255, 255, 0.78);
+            // --glass-hi:   rgba(255, 255, 255, 0.92);
+            // --glass-low:  rgba(255, 255, 255, 0.55);
+            // --surface:    rgba(255, 255, 255, 0.82);
+            // --surface-2:  rgba(245, 247, 241, 0.90);
+            // --surface-3:  rgba(235, 239, 229, 0.95);
+            // --border:     rgba(0, 0, 0, 0.07);
+            // --border-hi:  rgba(0, 0, 0, 0.13);
+            // --accent:     #C8F135;
+            // --accent-dim: rgba(200, 241, 53, 0.22);
+            // --accent-text:#5A7000;
+            // --text-1:     #111D00;
+            // --text-2:     #445230;
+            // --text-3:     #8A9E74;
+            // --danger:     #E53E3E;
+            // --warning:    #F59E0B;
+            // --safe:       #3DA01A;
+            // --radius-sm:  12px;
+            // --radius-md:  18px;
+            // --radius-lg:  26px;
+            // --radius-full: 999px;
+            // --sheet-peek: 88px;
+            // --sidebar-w:  340px;
+            // --blur:       blur(22px);
+            // --shadow-sm:  0 2px 12px rgba(0,0,0,0.07);
+            // --shadow-md:  0 6px 28px rgba(0,0,0,0.11);
+            // --shadow-lg:  0 16px 48px rgba(0,0,0,0.14);
+
+let map;
         let currentLocation = null;
         let currentDestination = null;
+        let currentHeading = null;
         let userMarker = null;
         let destMarker = null;
         let watchId = null;
@@ -33,6 +68,33 @@
             const Δλ = (lon2 - lon1) * toRad;
             const a = Math.sin(Δφ / 2) ** 2 + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) ** 2;
             return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+
+        function computeBearing(lat1, lon1, lat2, lon2) {
+            const toRad = Math.PI / 180;
+            const toDeg = 180 / Math.PI;
+            const φ1 = lat1 * toRad;
+            const φ2 = lat2 * toRad;
+            const Δλ = (lon2 - lon1) * toRad;
+            const y = Math.sin(Δλ) * Math.cos(φ2);
+            const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+            return (toDeg * Math.atan2(y, x) + 360) % 360;
+        }
+
+        function updateMapOrientation() {
+            if (!map || !currentLocation) return;
+            let heading = null;
+            if (typeof currentHeading === 'number' && !isNaN(currentHeading)) {
+                heading = currentHeading;
+            } else if (currentDestination) {
+                heading = computeBearing(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
+            }
+            const mapEl = document.getElementById('map');
+            if (heading === null) {
+                mapEl.style.transform = '';
+            } else {
+                mapEl.style.transform = `rotate(${-heading}deg)`;
+            }
         }
 
         function clearRouteLayer() {
@@ -212,6 +274,7 @@
             destMarker = L.marker([dest.lat, dest.lng], { icon: destIcon }).addTo(map);
             
             if (currentLocation) fetchRoute(false, currentLocation);
+            updateMapOrientation();
             sheet.classList.remove('inactive');
             sheet.classList.add('expanded');
         }
@@ -272,6 +335,7 @@
             } else {
                 followBtn.classList.remove('follow-active');
             }
+            updateMapOrientation();
         }
         
         function toggleFollowMode() { setFollowMode(!followMode); }
@@ -349,6 +413,11 @@
                 (pos) => {
                     const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     currentLocation = newLoc;
+                    if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading)) {
+                        currentHeading = pos.coords.heading;
+                    } else {
+                        currentHeading = null;
+                    }
                     document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
                     led.classList.add('live');
                     
@@ -367,6 +436,7 @@
                     if (followMode && currentLocation) {
                         map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
                     }
+                    updateMapOrientation();
                     
                     if (currentDestination && isNavigating) {
                         const remainingDist = haversine(
