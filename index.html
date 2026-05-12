@@ -4,6 +4,16 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#FAF2E5" />
+    <meta name="description" content="Campus Navigator - Navigate your campus with ease" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Campus Connect" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" type="image/png" sizes="192x192" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23F2C94C' width='192' height='192'/><text x='96' y='120' font-size='80' font-weight='bold' text-anchor='middle' fill='%23121212' font-family='Arial'>📍</text></svg>" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect fill='%23F2C94C' width='180' height='180' rx='40'/><text x='90' y='135' font-size='70' font-weight='bold' text-anchor='middle' fill='%23121212' font-family='Arial'>📍</text></svg>" />
     <title>Campus Connect</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
@@ -49,10 +59,14 @@
 
         html, body {
             height: 100%;
+            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
             background: var(--bg);
             font-family: 'DM Sans', sans-serif;
             color: var(--text-1);
+            position: fixed;
+            width: 100%;
         }
 
         #map {
@@ -545,6 +559,8 @@
             border-top: 2px solid var(--border-hi);
             display: flex;
             padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 6px);
+            padding-left: env(safe-area-inset-left, 0px);
+            padding-right: env(safe-area-inset-right, 0px);
             box-shadow: 0 -18px 0 rgba(0,0,0,0.08);
         }
 
