@@ -27,7 +27,7 @@
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            zoom: 0.97;
+            
         }
 
         :root {
@@ -60,24 +60,16 @@
 
         html, body {
             height: 100%;
-            height: 100vh;
-            height: 100dvh;
             overflow: hidden;
             background: var(--bg);
             font-family: 'DM Sans', sans-serif;
             color: var(--text-1);
-            position: fixed;
-            width: 100%;
         }
 
         #map {
             position: absolute;
             inset: 0;
             z-index: 1;
-            width: 100vw;
-            width: 100dvw;
-            height: 100vh;
-            height: 100dvh;
         }
 
         .leaflet-tile {
@@ -98,9 +90,9 @@
 
         .top-bar {
             position: fixed;
-            top: env(safe-area-inset-top, 18px);
-            left: env(safe-area-inset-left, 14px);
-            right: env(safe-area-inset-right, 14px);
+            top: 18px;
+            left: 14px;
+            right: 14px;
             z-index: 60;
             display: flex;
             align-items: center;
@@ -219,8 +211,8 @@
 
         .map-controls {
             position: fixed;
-            right: env(safe-area-inset-right, 16px);
-            bottom: calc(var(--sheet-peek) + 24px + env(safe-area-inset-bottom, 0px));
+            right: 16px;
+            bottom: calc(var(--sheet-peek) + 24px);
             z-index: 50;
             display: flex;
             flex-direction: column;
@@ -254,8 +246,8 @@
 
         .mode-pill {
             position: fixed;
-            left: env(safe-area-inset-left, 16px);
-            bottom: calc(var(--sheet-peek) + 24px + env(safe-area-inset-bottom, 0px));
+            left: 16px;
+            bottom: calc(var(--sheet-peek) + 24px);
             z-index: 50;
             height: 46px;
             padding: 0 18px;
@@ -290,8 +282,6 @@
             border-radius: 0;
             transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
             box-shadow: 0 -18px 0 rgba(0,0,0,0.08);
-            max-height: calc(100vh - env(safe-area-inset-bottom, 0px));
-            max-height: calc(100dvh - env(safe-area-inset-bottom, 0px));
         }
 
         .sheet.collapsed {
@@ -565,9 +555,7 @@
             background: var(--surface);
             border-top: 2px solid var(--border-hi);
             display: flex;
-            padding: 8px 0 calc(env(safe-area-inset-bottom, 0px) + 6px);
-            padding-left: env(safe-area-inset-left, 0px);
-            padding-right: env(safe-area-inset-right, 0px);
+            padding: 8px 0 6px;
             box-shadow: 0 -18px 0 rgba(0,0,0,0.08);
         }
 
@@ -692,7 +680,7 @@
                 z-index: 200;
                 opacity: 1 !important;
                 pointer-events: auto !important;
-                padding: 10px 0 calc(env(safe-area-inset-bottom, 0px) + 10px);
+                padding: 10px 0 10px;
             }
 
             .sheet-body > .sheet-top-row {
