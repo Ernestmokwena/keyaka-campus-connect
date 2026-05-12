@@ -13,21 +13,21 @@
   },
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23F2C94C' width='192' height='192'/><text x='96' y='120' font-size='80' font-weight='bold' text-anchor='middle' fill='%23121212' font-family='Arial'>📍</text></svg>",
+      "src": "https://premiumdesigns.co.za/logo.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect fill='%23F2C94C' width='512' height='512'/><text x='256' y='400' font-size='280' font-weight='bold' text-anchor='middle' fill='%23121212' font-family='Arial'>📍</text></svg>",
+      "src": "https://premiumdesigns.co.za/logo.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect fill='%23F2C94C' width='192' height='192'/><circle cx='96' cy='96' r='80' fill='none' stroke='%23121212' stroke-width='8'/><path d='M96 40 L120 80 L96 100 L72 80 Z' fill='%23121212'/></svg>",
+      "src": "https://premiumdesigns.co.za/logo.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
@@ -54,9 +54,9 @@
       "url": "/?mode=navigate",
       "icons": [
         {
-          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23F2C94C' width='96' height='96' rx='20'/><text x='48' y='72' font-size='40' font-weight='bold' text-anchor='middle' fill='%23121212' font-family='Arial'>→</text></svg>",
+          "src": "https://premiumdesigns.co.za/logo.png",
           "sizes": "96x96",
-          "type": "image/svg+xml"
+          "type": "image/png"
         }
       ]
     },
@@ -67,9 +67,9 @@
       "url": "/?mode=explore",
       "icons": [
         {
-          "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 96 96'><rect fill='%23F2C94C' width='96' height='96' rx='20'/><text x='48' y='72' font-size='40' font-weight='bold' text-anchor='middle' fill='%23121212' font-family='Arial'>🗺</text></svg>",
+          "src": "https://premiumdesigns.co.za/logo.png",
           "sizes": "96x96",
-          "type": "image/svg+xml"
+          "type": "image/png"
         }
       ]
     }
