@@ -112,6 +112,11 @@ let map;
             if (!userMarker) return;
             const bearing = getActiveBearing();
             userMarker.setIcon(createUserMarkerIcon(bearing));
+            
+            // Auto-rotate map like Google Maps when following
+            if (followMode && typeof currentHeading === 'number' && !isNaN(currentHeading)) {
+                map.setBearing(currentHeading);
+            }
         }
 
         function handleDeviceOrientation(event) {
@@ -383,6 +388,8 @@ let map;
                 if (currentLocation) map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
             } else {
                 followBtn.classList.remove('follow-active');
+                // Reset map to north-up when not following
+                map.setBearing(0);
             }
             updateBearingMarker();
         }
