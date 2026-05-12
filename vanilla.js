@@ -89,11 +89,12 @@ let map;
             } else if (currentDestination) {
                 heading = computeBearing(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
             }
-            const mapEl = document.getElementById('map');
+            const mapPane = document.querySelector('#map .leaflet-map-pane');
+            if (!mapPane) return;
             if (heading === null) {
-                mapEl.style.transform = '';
+                mapPane.style.transform = '';
             } else {
-                mapEl.style.transform = `rotate(${-heading}deg)`;
+                mapPane.style.transform = `rotate(${-heading}deg)`;
             }
         }
 
