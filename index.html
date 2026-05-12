@@ -73,6 +73,10 @@
             position: absolute;
             inset: 0;
             z-index: 1;
+            width: 100vw;
+            width: 100dvw;
+            height: 100vh;
+            height: 100dvh;
         }
 
         .leaflet-tile {
@@ -93,9 +97,9 @@
 
         .top-bar {
             position: fixed;
-            top: 18px;
-            left: 14px;
-            right: 14px;
+            top: env(safe-area-inset-top, 18px);
+            left: env(safe-area-inset-left, 14px);
+            right: env(safe-area-inset-right, 14px);
             z-index: 60;
             display: flex;
             align-items: center;
@@ -214,8 +218,8 @@
 
         .map-controls {
             position: fixed;
-            right: 16px;
-            bottom: calc(var(--sheet-peek) + 24px);
+            right: env(safe-area-inset-right, 16px);
+            bottom: calc(var(--sheet-peek) + 24px + env(safe-area-inset-bottom, 0px));
             z-index: 50;
             display: flex;
             flex-direction: column;
@@ -249,8 +253,8 @@
 
         .mode-pill {
             position: fixed;
-            left: 16px;
-            bottom: calc(var(--sheet-peek) + 24px);
+            left: env(safe-area-inset-left, 16px);
+            bottom: calc(var(--sheet-peek) + 24px + env(safe-area-inset-bottom, 0px));
             z-index: 50;
             height: 46px;
             padding: 0 18px;
@@ -285,6 +289,8 @@
             border-radius: 0;
             transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
             box-shadow: 0 -18px 0 rgba(0,0,0,0.08);
+            max-height: calc(100vh - env(safe-area-inset-bottom, 0px));
+            max-height: calc(100dvh - env(safe-area-inset-bottom, 0px));
         }
 
         .sheet.collapsed {
