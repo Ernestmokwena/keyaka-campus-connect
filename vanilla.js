@@ -81,21 +81,37 @@ let map;
             return (toDeg * Math.atan2(y, x) + 360) % 360;
         }
 
-        function updateMapOrientation() {
-            if (!map || !currentLocation) return;
-            let heading = null;
+        function getActiveBearing() {
             if (typeof currentHeading === 'number' && !isNaN(currentHeading)) {
-                heading = currentHeading;
-            } else if (currentDestination) {
-                heading = computeBearing(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
+                return currentHeading;
             }
-            const mapPane = document.querySelector('#map .leaflet-map-pane');
-            if (!mapPane) return;
-            if (heading === null) {
-                mapPane.style.transform = '';
-            } else {
-                mapPane.style.transform = `rotate(${-heading}deg)`;
+            if (currentDestination && currentLocation) {
+                return computeBearing(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
             }
+            return null;
+        }
+
+        function createUserMarkerIcon(bearing) {
+            const rotation = typeof bearing === 'number' ? bearing : 0;
+            return L.divIcon({
+                html: `
+                    <div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;position:relative;">
+                        <div style="width:18px;height:18px;background:#C8F135;border:2px solid #111D00;border-radius:50%;box-shadow:0 0 0 5px rgba(200,241,53,0.35);"></div>
+                        <div style="position:absolute;top:3px;left:50%;transform:translateX(-50%) rotate(${rotation}deg);transform-origin:50% 100%;">
+                            <div style="width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:14px solid #111D00;"></div>
+                        </div>
+                    </div>
+                `,
+                className: '',
+                iconSize: [44, 44],
+                iconAnchor: [22, 22]
+            });
+        }
+
+        function updateBearingMarker() {
+            if (!userMarker) return;
+            const bearing = getActiveBearing();
+            userMarker.setIcon(createUserMarkerIcon(bearing));
         }
 
         function clearRouteLayer() {
@@ -275,7 +291,7 @@ let map;
             destMarker = L.marker([dest.lat, dest.lng], { icon: destIcon }).addTo(map);
             
             if (currentLocation) fetchRoute(false, currentLocation);
-            updateMapOrientation();
+            updateBearingMarker();
             sheet.classList.remove('inactive');
             sheet.classList.add('expanded');
         }
@@ -336,7 +352,7 @@ let map;
             } else {
                 followBtn.classList.remove('follow-active');
             }
-            updateMapOrientation();
+            updateBearingMarker();
         }
         
         function toggleFollowMode() { setFollowMode(!followMode); }
@@ -426,18 +442,14 @@ let map;
                         userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
                     } else {
                         userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], {
-                            icon: L.divIcon({
-                                html: `<div style="background:#C8F135; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 5px rgba(200,241,53,0.3); border:2px solid #111D00;"><span class="icon" style="color:#111D00; font-size:15px; font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 1;">${currentMode === "walk" ? "directions_walk" : "directions_car"}</span></div>`,
-                                iconSize: [32, 32],
-                                iconAnchor: [16, 16]
-                            })
+                            icon: createUserMarkerIcon(getActiveBearing())
                         }).addTo(map);
                     }
                     
                     if (followMode && currentLocation) {
                         map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
                     }
-                    updateMapOrientation();
+                    updateBearingMarker();
                     
                     if (currentDestination && isNavigating) {
                         const remainingDist = haversine(
