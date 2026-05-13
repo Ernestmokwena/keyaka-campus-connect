@@ -113,18 +113,35 @@ let map;
             const bearing = getActiveBearing();
             userMarker.setIcon(createUserMarkerIcon(bearing));
             
-            // Auto-rotate map like Google Maps
-            if (followMode && typeof currentHeading === 'number' && !isNaN(currentHeading)) {
-                // When following with device heading, use device heading
-                map.setBearing(currentHeading);
-            } else if (isNavigating && currentDestination && currentLocation) {
-                // During navigation, rotate map so direction to destination is on top
-                const destBearing = computeBearing(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
-                map.setBearing(destBearing);
-            } else {
-                // Reset to north-up when not navigating
-                map.setBearing(0);
+            // Properly rotate map like Google Maps - rotate tile pane, not container
+            updateMapRotation(bearing);
+        }
+
+        function updateMapRotation(bearing) {
+            const pane = map.getPane('tilePane');
+            const overlayPane = map.getPane('overlayPane');
+            const shadowPane = map.getPane('shadowPane');
+            
+            if (!bearing || bearing === 0) {
+                // Reset to north-up
+                pane.style.transform = '';
+                pane.style.transformOrigin = '';
+                overlayPane.style.transform = '';
+                shadowPane.style.transform = '';
+                return;
             }
+            
+            // Rotate tile pane with scaling to prevent grey corners
+            // sqrt(2) ≈ 1.414, but we use 1.5 for safety margin
+            const scale = 1.5;
+            pane.style.transformOrigin = '50% 50%';
+            pane.style.transform = `rotate(${bearing}deg) scale(${scale})`;
+            
+            // Counter-rotate markers and overlays to keep them upright
+            overlayPane.style.transformOrigin = '50% 50%';
+            overlayPane.style.transform = `rotate(${-bearing}deg)`;
+            shadowPane.style.transformOrigin = '50% 50%';
+            shadowPane.style.transform = `rotate(${-bearing}deg)`;
         }
 
         function handleDeviceOrientation(event) {
@@ -397,7 +414,7 @@ let map;
                 if (currentLocation) map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
             } else {
                 followBtn.classList.remove('follow-active');
-                // Bearing will be handled by updateBearingMarker
+                // Rotation will be handled by updateBearingMarker
             }
             updateBearingMarker();
         }
@@ -465,8 +482,8 @@ let map;
         function initMap() {
             map = L.map('map', { 
                 zoomControl: false, 
-                attributionControl: false,
-                touchRotate: true  // Allow touch rotation
+                attributionControl: false
+                // Removed touchRotate since we're handling rotation manually
             })
                    .setView([-23.88674, 29.73942], 18);
             L.tileLayer('https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 19 }).addTo(map);
