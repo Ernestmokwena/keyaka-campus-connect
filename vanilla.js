@@ -113,35 +113,10 @@ let map;
             const bearing = getActiveBearing();
             userMarker.setIcon(createUserMarkerIcon(bearing));
             
-            // Properly rotate map like Google Maps - rotate tile pane, not container
-            updateMapRotation(bearing);
-        }
-
-        function updateMapRotation(bearing) {
-            const pane = map.getPane('tilePane');
-            const overlayPane = map.getPane('overlayPane');
-            const shadowPane = map.getPane('shadowPane');
-            
-            if (!bearing || bearing === 0) {
-                // Reset to north-up
-                pane.style.transform = '';
-                pane.style.transformOrigin = '';
-                overlayPane.style.transform = '';
-                shadowPane.style.transform = '';
-                return;
+            // Auto-rotate map like Google Maps when following
+            if (followMode && typeof currentHeading === 'number' && !isNaN(currentHeading)) {
+                map.setBearing(currentHeading);
             }
-            
-            // Rotate tile pane with scaling to prevent grey corners
-            // sqrt(2) ≈ 1.414, but we use 1.5 for safety margin
-            const scale = 1.5;
-            pane.style.transformOrigin = '50% 50%';
-            pane.style.transform = `rotate(${bearing}deg) scale(${scale})`;
-            
-            // Counter-rotate markers and overlays to keep them upright
-            overlayPane.style.transformOrigin = '50% 50%';
-            overlayPane.style.transform = `rotate(${-bearing}deg)`;
-            shadowPane.style.transformOrigin = '50% 50%';
-            shadowPane.style.transform = `rotate(${-bearing}deg)`;
         }
 
         function handleDeviceOrientation(event) {
@@ -390,7 +365,6 @@ let map;
             
             fetchRoute(false, currentLocation);
             map.setView([currentLocation.lat, currentLocation.lng], 18);
-            updateBearingMarker(); // Rotate map for navigation
             sheet.classList.remove('expanded');
             sheet.classList.add('collapsed');
         }
@@ -414,7 +388,8 @@ let map;
                 if (currentLocation) map.setView([currentLocation.lat, currentLocation.lng], map.getZoom());
             } else {
                 followBtn.classList.remove('follow-active');
-                // Rotation will be handled by updateBearingMarker
+                // Reset map to north-up when not following
+                map.setBearing(0);
             }
             updateBearingMarker();
         }
@@ -482,8 +457,8 @@ let map;
         function initMap() {
             map = L.map('map', { 
                 zoomControl: false, 
-                attributionControl: false
-                // Removed touchRotate since we're handling rotation manually
+                attributionControl: false,
+                touchRotate: true  // Allow touch rotation
             })
                    .setView([-23.88674, 29.73942], 18);
             L.tileLayer('https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 19 }).addTo(map);
