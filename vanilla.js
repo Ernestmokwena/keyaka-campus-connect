@@ -50,7 +50,6 @@ let map;
         let currentRouteRequestId = 0;
         let offRouteCounter = 0;
         let isOffRouteFlag = false;
-        let lastPosition = null;
         
         const statusDiv = document.getElementById('gpsText');
         const sheet = document.getElementById('navSheet');
@@ -90,26 +89,6 @@ let map;
                 return computeBearing(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
             }
             return null;
-        }
-
-        function animateMarkerTo(marker, newLatLng, duration = 1000) {
-            if (!marker || !lastPosition) {
-                marker.setLatLng(newLatLng);
-                return;
-            }
-            const startLatLng = lastPosition;
-            const startTime = Date.now();
-            const animate = () => {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const lat = startLatLng.lat + (newLatLng.lat - startLatLng.lat) * progress;
-                const lng = startLatLng.lng + (newLatLng.lng - startLatLng.lng) * progress;
-                marker.setLatLng([lat, lng]);
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            };
-            animate();
         }
 
         function createUserMarkerIcon(bearing) {
@@ -492,7 +471,6 @@ let map;
             
             watchId = navigator.geolocation.watchPosition(
                 (pos) => {
-                    lastPosition = currentLocation;
                     const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
                     currentLocation = newLoc;
                     if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading)) {
@@ -504,7 +482,7 @@ let map;
                     led.classList.add('live');
                     
                     if (userMarker) {
-                        animateMarkerTo(userMarker, [pos.coords.latitude, pos.coords.longitude]);
+                        userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
                     } else {
                         userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], {
                             icon: createUserMarkerIcon(getActiveBearing())
