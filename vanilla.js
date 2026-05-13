@@ -464,32 +464,6 @@ let map;
             L.tileLayer('https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 19 }).addTo(map);
         }
 
-        function animateMarkerTo(marker, targetLatLng, duration = 1000) {
-            if (!marker) return;
-            
-            const startLatLng = marker.getLatLng();
-            const startTime = Date.now();
-            
-            function animate() {
-                const elapsed = Date.now() - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                
-                // Easing function for smooth animation
-                const easeInOut = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-                
-                const lat = startLatLng.lat + (targetLatLng.lat - startLatLng.lat) * easeInOut;
-                const lng = startLatLng.lng + (targetLatLng.lng - startLatLng.lng) * easeInOut;
-                
-                marker.setLatLng([lat, lng]);
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            }
-            
-            animate();
-        }
-
         function startGPS() {
             if (!navigator.geolocation) { statusDiv.innerHTML = "GPS not supported"; return; }
             const led = document.getElementById('gpsLed');
@@ -508,7 +482,7 @@ let map;
                     led.classList.add('live');
                     
                     if (userMarker) {
-                        animateMarkerTo(userMarker, [pos.coords.latitude, pos.coords.longitude], 500);
+                        userMarker.setLatLng([pos.coords.latitude, pos.coords.longitude]);
                     } else {
                         userMarker = L.marker([pos.coords.latitude, pos.coords.longitude], {
                             icon: createUserMarkerIcon(getActiveBearing())
