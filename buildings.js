@@ -8,5 +8,6 @@ const campusBuildings = [
     { lat: -23.8885565, lng: 29.7386208, name: "S Block" },
     { lat: -23.8868692, lng: 29.7376558, name: "SRC Chambers" },
     { lat: -23.8877729, lng: 29.7370029, name: "Tsalas Cafe" },
-    { lat: -23.8868133, lng: 29.7363624, name: "Mashobane Res" }
+    { lat: -23.8868133, lng: 29.7363624, name: "Mashobane Res" },
+    { lat: -23.8877729, lng: 29.7370029, name: "Ledwaba " },
 ];
