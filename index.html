@@ -14,12 +14,11 @@
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" type="image/png" sizes="192x192" href="https://premiumdesigns.co.za/logo.png" />
     <link rel="apple-touch-icon" href="https://premiumdesigns.co.za/logo.png" />
-    <title>Campus Connect</title>
+    <title>Campus Connect - MapLibre GL</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/leaflet-rotate@0.1.4/dist/leaflet-rotate.js"></script>
+    <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+    <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
 
     <style>
         * {
@@ -27,7 +26,6 @@
             padding: 0;
             box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
-            
         }
 
         :root {
@@ -70,10 +68,6 @@
             position: absolute;
             inset: 0;
             z-index: 1;
-        }
-
-        .leaflet-tile {
-            filter: brightness(1.06) saturate(0.72) hue-rotate(8deg);
         }
 
         .icon {
@@ -168,6 +162,8 @@
             z-index: 100;
             display: none;
             box-shadow: var(--shadow-lg);
+            max-height: 300px;
+            overflow-y: auto;
         }
         .suggestions-dropdown.show { display: block; }
 
@@ -244,6 +240,11 @@
         }
         .ctrl-btn.follow-active .icon { font-variation-settings: "FILL" 1; }
 
+        .ctrl-btn.rotation-test {
+            background: var(--accent-dim);
+            border-color: var(--accent);
+        }
+
         .mode-pill {
             position: fixed;
             left: 16px;
@@ -269,6 +270,22 @@
             font-weight: 800;
             color: var(--text-1);
             letter-spacing: 0.01em;
+        }
+
+        .rotation-indicator {
+            position: fixed;
+            top: 80px;
+            right: 16px;
+            background: var(--surface);
+            border: 2px solid var(--border-hi);
+            border-radius: var(--radius-sm);
+            padding: 8px 12px;
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            font-weight: 600;
+            z-index: 60;
+            box-shadow: var(--shadow-sm);
+            pointer-events: none;
         }
 
         .sheet {
@@ -477,12 +494,10 @@
         .btn-stop:hover  { background: var(--surface-2); }
         .btn-stop:active { transform: translateY(1px); box-shadow: 4px 4px 0 rgba(0,0,0,0.08); }
         
-        /* Stop button hidden by default */
         .btn-stop {
             display: none;
         }
         
-        /* Show stop button only when navigating */
         .btn-stop.visible {
             display: flex;
         }
@@ -610,7 +625,11 @@
             white-space: nowrap;
         }
 
-        /* DESKTOP OVERRIDES - KEPT EXACTLY AS BEFORE */
+        /* MapLibre GL custom controls positioning */
+        .maplibregl-ctrl-top-right {
+            display: none !important;
+        }
+
         @media (min-width: 768px) {
             .sheet {
                 top: 0;
@@ -665,6 +684,11 @@
                 bottom: 32px;
             }
 
+            .rotation-indicator {
+                right: 20px;
+                top: 80px;
+            }
+
             .bottom-nav {
                 top: auto;
                 left: 0;
@@ -695,7 +719,6 @@
                 margin-top: 90px;
             }
             
-            /* Hide close button on desktop */
             .close-btn {
                 display: none !important;
             }
@@ -736,9 +759,6 @@
             margin: 20px 0 0;
         }
 
-        .leaflet-control-zoom        { display: none !important; }
-        .leaflet-control-attribution { display: none !important; }
-
         .suggestions-dropdown::-webkit-scrollbar       { width: 4px; }
         .suggestions-dropdown::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
 
@@ -764,6 +784,10 @@
         </div>
     </div>
 
+    <div class="rotation-indicator" id="rotationIndicator">
+        Bearing: 0°
+    </div>
+
     <div class="mode-pill" id="modeToggle">
         <span class="icon icon-sm" id="modeIcon">directions_walk</span>
         <span class="mode-pill-label" id="modeText">Walk</span>
@@ -772,7 +796,9 @@
     <div class="map-controls">
         <div class="ctrl-btn" id="zoomInBtn"><span class="icon icon-md">add</span></div>
         <div class="ctrl-btn" id="zoomOutBtn"><span class="icon icon-md">remove</span></div>
+        <div class="ctrl-btn rotation-test" id="rotateTestBtn"><span class="icon icon-md">rotate_right</span></div>
         <div class="ctrl-btn" id="followMeBtn"><span class="icon icon-md">navigation</span></div>
+        <div class="ctrl-btn" id="resetNorthBtn"><span class="icon icon-md">north</span></div>
     </div>
 
     <div class="sheet inactive" id="navSheet">
