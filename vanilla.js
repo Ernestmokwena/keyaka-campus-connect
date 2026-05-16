@@ -5,7 +5,7 @@ let currentHeading = null;
 let userMarker = null;
 let destMarker = null;
 let watchId = null;
-let isNavigating = false;
+let iysNavigating = false;
 let currentMode = "walk";
 let followMode = false;
 let routeSource = null;
@@ -427,7 +427,7 @@ function initMap() {
             sources: {
                 'raster-tiles': {
                     type: 'raster',
-                    tiles: ['https://mt0.google.com/vt/lyrs=y&x={x}&y={y}&z={z}'],
+                    tiles: ['https://mt0.google.com/vt/lyrs=s&x={x}&y={y}&z={z}'],
                     tileSize: 256,
                     attribution: 'Google Satellite'
                 }
