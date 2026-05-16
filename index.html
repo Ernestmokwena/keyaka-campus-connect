@@ -739,6 +739,90 @@
         .leaflet-control-zoom        { display: none !important; }
         .leaflet-control-attribution { display: none !important; }
 
+        /* Compass styles */
+        .compass-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 40;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .compass-indicator {
+            width: 80px;
+            height: 80px;
+            background: var(--surface);
+            border: 2px solid var(--border-hi);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: var(--shadow-md);
+            transition: transform 0.1s ease-out;
+        }
+
+        .compass-needle {
+            width: 3px;
+            height: 28px;
+            background: linear-gradient(180deg, var(--accent) 0%, var(--accent-text) 100%);
+            border-radius: 2px;
+            position: absolute;
+            top: 8px;
+            transform-origin: bottom center;
+            transition: transform 0.05s ease-out;
+        }
+
+        .compass-center {
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border: 2px solid var(--accent-text);
+            border-radius: 50%;
+            z-index: 2;
+            box-shadow: 0 0 0 3px rgba(242,201,76,0.15);
+        }
+
+        .compass-cardinal {
+            position: absolute;
+            font-size: 10px;
+            font-weight: 800;
+            color: var(--text-2);
+            letter-spacing: 0.05em;
+        }
+
+        .compass-n {
+            top: 6px;
+            color: var(--accent);
+            font-weight: 900;
+        }
+        .compass-s { bottom: 6px; }
+        .compass-e { right: 6px; }
+        .compass-w { left: 6px; }
+
+        .compass-heading {
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-2);
+            background: var(--surface-2);
+            padding: 4px 12px;
+            border-radius: var(--radius-full);
+            border: 1px solid var(--border);
+            min-width: 60px;
+            text-align: center;
+        }
+
+        @media (min-width: 768px) {
+            .compass-container {
+                top: 28px;
+                right: 28px;
+            }
+        }
+
         .suggestions-dropdown::-webkit-scrollbar       { width: 4px; }
         .suggestions-dropdown::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 4px; }
 
@@ -749,6 +833,18 @@
 
 <body>
     <div id="map"></div>
+    
+    <div class="compass-container" id="compassContainer">
+        <div class="compass-indicator" id="compassIndicator">
+            <div class="compass-cardinal compass-n">N</div>
+            <div class="compass-cardinal compass-e">E</div>
+            <div class="compass-cardinal compass-s">S</div>
+            <div class="compass-cardinal compass-w">W</div>
+            <div class="compass-needle" id="compassNeedle"></div>
+            <div class="compass-center"></div>
+        </div>
+        <div class="compass-heading" id="compassHeading">—°</div>
+    </div>
     
     <div class="off-route-badge" id="offRouteBadge"> Off route • Rerouting...</div>
 
