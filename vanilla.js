@@ -254,7 +254,7 @@ async function loadNetworkOverlay() {
         }
     } catch (err) {
         console.error('Failed to load network overlay:', err);
-        statusDiv.innerHTML = "GPS active · Network overlay failed";
+        statusDiv.innerHTML = "GPS active";
     }
 }
 
