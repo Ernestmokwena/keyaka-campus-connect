@@ -5,7 +5,7 @@ let currentHeading = null;
 let userMarker = null;
 let destMarker = null;
 let watchId = null;
-let iysNavigating = false;
+let isNavigating = false;
 let currentMode = "walk";
 let followMode = false;
 let routeSource = null;
@@ -80,11 +80,11 @@ function updateBearingMarker() {
     const bearing = getActiveBearing();
     const el = createUserMarkerElement(bearing);
     userMarker.getElement().innerHTML = el.innerHTML;
-    
+
     if (typeof bearing === 'number') {
         rotationIndicator.innerHTML = `Bearing: ${Math.round(bearing)}°`;
     }
-    
+
     // Auto-rotate map when following
     if (followMode && typeof currentHeading === 'number' && !isNaN(currentHeading)) {
         map.easeTo({ bearing: currentHeading, duration: 300 });
@@ -116,7 +116,7 @@ function initHeadingSensors() {
             .then(permission => {
                 if (permission === 'granted') addListener();
             })
-            .catch(() => {});
+            .catch(() => { });
     } else {
         addListener();
     }
@@ -148,17 +148,17 @@ function updateMetrics(distance) {
 
 function fetchRoute(forceReroute = false, startPoint = null) {
     if (!currentDestination) return;
-    
+
     const routeStart = startPoint || currentLocation;
     if (!routeStart) return;
-    
+
     if (isFetchingRoute) return;
-    
+
     isFetchingRoute = true;
     const thisRequestId = ++currentRouteRequestId;
-    
+
     const url = `/api/route?startLat=${routeStart.lat}&startLng=${routeStart.lng}&endLat=${currentDestination.lat}&endLng=${currentDestination.lng}&mode=${currentMode}`;
-    
+
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -166,12 +166,12 @@ function fetchRoute(forceReroute = false, startPoint = null) {
                 isFetchingRoute = false;
                 return;
             }
-            
+
             if (data.path && data.path.length > 0) {
                 clearRouteLayer();
-                
+
                 const coordinates = data.path.map(p => [p[1], p[0]]);
-                
+
                 // Add route source and layer
                 map.addSource('route', {
                     type: 'geojson',
@@ -184,7 +184,7 @@ function fetchRoute(forceReroute = false, startPoint = null) {
                         }
                     }
                 });
-                
+
                 map.addLayer({
                     id: 'route',
                     type: 'line',
@@ -199,9 +199,9 @@ function fetchRoute(forceReroute = false, startPoint = null) {
                         'line-opacity': 0.95
                     }
                 });
-                
+
                 updateMetrics(data.distance);
-                
+
                 if (forceReroute) {
                     setTimeout(() => {
                         if (map.getLayer('route')) {
@@ -225,13 +225,13 @@ async function loadNetworkOverlay() {
     try {
         const response = await fetch('/api/network-data');
         const geojson = await response.json();
-        
+
         if (geojson && geojson.features && geojson.features.length > 0) {
             map.addSource('network', {
                 type: 'geojson',
                 data: geojson
             });
-            
+
             map.addLayer({
                 id: 'network',
                 type: 'line',
@@ -246,7 +246,7 @@ async function loadNetworkOverlay() {
                     'line-opacity': 0.7
                 }
             });
-            
+
             console.log(`Network overlay loaded: ${geojson.features.length} features`);
             statusDiv.innerHTML = `GPS active · ${geojson.features.length} paths loaded`;
         } else {
@@ -262,21 +262,21 @@ function setDestination(dest) {
     clearRouteLayer();
     offRouteCounter = 0;
     isOffRouteFlag = false;
-    
+
     currentDestination = dest;
     document.getElementById('destinationLabel').innerHTML = dest.name;
     document.getElementById('compactDest').innerHTML = dest.name;
-    
+
     if (destMarker) destMarker.remove();
-    
+
     // Create destination marker
     const el = document.createElement('div');
     el.innerHTML = `<div style="background:#C8F135; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; box-shadow:0 0 0 5px rgba(200,241,53,0.25), 0 2px 12px rgba(0,0,0,0.25); border:2px solid #111D00;"><span class="icon" style="color:#111D00; font-size:16px; font-family:'Material Symbols Outlined'; font-variation-settings:'FILL' 1;">location_on</span></div>`;
-    
+
     destMarker = new maplibregl.Marker({ element: el, anchor: 'center' })
         .setLngLat([dest.lng, dest.lat])
         .addTo(map);
-    
+
     if (currentLocation) fetchRoute(false, currentLocation);
     updateBearingMarker();
     sheet.classList.remove('inactive');
@@ -287,11 +287,11 @@ function clearDestination() {
     clearRouteLayer();
     offRouteCounter = 0;
     isOffRouteFlag = false;
-    
+
     currentDestination = null;
-    
+
     if (destMarker) { destMarker.remove(); destMarker = null; }
-    
+
     document.getElementById('destinationLabel').innerHTML = "Select destination";
     document.getElementById('compactDest').innerHTML = "Select destination";
     document.getElementById('distanceVal').innerHTML = "—";
@@ -302,17 +302,17 @@ function clearDestination() {
 
 function startNavigation() {
     if (!currentLocation) return;
-    if (!currentDestination) { 
-        sheet.classList.add('expanded'); 
-        searchInput.focus(); 
-        return; 
+    if (!currentDestination) {
+        sheet.classList.add('expanded');
+        searchInput.focus();
+        return;
     }
     isNavigating = true;
     offRouteCounter = 0;
     isOffRouteFlag = false;
-    
+
     stopNavBtn.classList.add('visible');
-    
+
     fetchRoute(false, currentLocation);
     map.flyTo({
         center: [currentLocation.lng, currentLocation.lat],
@@ -323,9 +323,9 @@ function startNavigation() {
     sheet.classList.add('collapsed');
 }
 
-function stopNavigation() { 
-    isNavigating = false; 
-    setFollowMode(false); 
+function stopNavigation() {
+    isNavigating = false;
+    setFollowMode(false);
     clearDestination();
     offRouteBadge.style.display = 'none';
     stopNavBtn.classList.remove('visible');
@@ -389,7 +389,7 @@ function showSuggestions(suggestions) {
         <div class="suggestion-item" data-lat="${b.lat}" data-lng="${b.lng}" data-name="${b.name.replace(/'/g, "\\'")}">
             <div class="sug-dot"></div>
             <div class="suggestion-name">${b.name}</div>
-            ${b.distance ? `<span class="suggestion-dist">${b.distance < 1000 ? Math.round(b.distance) + 'm' : (b.distance/1000).toFixed(1) + 'km'}</span>` : ''}
+            ${b.distance ? `<span class="suggestion-dist">${b.distance < 1000 ? Math.round(b.distance) + 'm' : (b.distance / 1000).toFixed(1) + 'km'}</span>` : ''}
         </div>`).join('');
     suggestionsDropdown.classList.add('show');
     document.querySelectorAll('.suggestion-item').forEach(item => {
@@ -447,13 +447,13 @@ function initMap() {
         touchZoomRotate: true,
         dragRotate: true
     });
-    
+
     map.addControl(new maplibregl.NavigationControl({ showCompass: false, showZoom: false }), 'top-right');
-    
+
     map.on('load', () => {
         loadNetworkOverlay();
     });
-    
+
     map.on('rotate', () => {
         const bearing = map.getBearing();
         rotationIndicator.innerHTML = `Bearing: ${Math.round(bearing)}°`;
@@ -461,7 +461,7 @@ function initMap() {
             rotationIndicator.style.background = 'var(--surface)';
         }
     });
-    
+
     // Add user marker
     const userEl = createUserMarkerElement(0);
     userMarker = new maplibregl.Marker({ element: userEl, anchor: 'center' })
@@ -472,7 +472,7 @@ function initMap() {
 function startGPS() {
     if (!navigator.geolocation) { statusDiv.innerHTML = "GPS not supported"; return; }
     const led = document.getElementById('gpsLed');
-    
+
     watchId = navigator.geolocation.watchPosition(
         (pos) => {
             const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
@@ -484,9 +484,9 @@ function startGPS() {
             }
             document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
             led.classList.add('live');
-            
+
             userMarker.setLngLat([pos.coords.longitude, pos.coords.latitude]);
-            
+
             if (followMode && currentLocation) {
                 map.flyTo({
                     center: [currentLocation.lng, currentLocation.lat],
@@ -494,14 +494,14 @@ function startGPS() {
                 });
             }
             updateBearingMarker();
-            
+
             if (currentDestination && isNavigating) {
                 const remainingDist = haversine(
                     currentLocation.lat, currentLocation.lng,
                     currentDestination.lat, currentDestination.lng
                 );
                 updateMetrics(remainingDist);
-                
+
                 if (remainingDist < 20) {
                     isNavigating = false;
                     setFollowMode(false);
@@ -599,9 +599,9 @@ window.addEventListener('load', () => {
     startGPS();
     initHeadingSensors();
     checkNetworkStatus();
-    
+
     if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
+        navigator.serviceWorker.register('sw.js').catch(() => { });
     }
 });
 
