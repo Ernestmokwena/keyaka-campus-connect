@@ -257,13 +257,9 @@ async function loadNetworkOverlay() {
             });
 
             console.log(`Network overlay loaded: ${geojson.features.length} features`);
-            statusDiv.innerHTML = `GPS active · ${geojson.features.length} paths loaded`;
-        } else {
-            statusDiv.innerHTML = "GPS active · No network data";
         }
     } catch (err) {
         console.error('Failed to load network overlay:', err);
-        statusDiv.innerHTML = "GPS active";
     }
 }
 
@@ -415,15 +411,17 @@ function checkNetworkStatus() {
         .then(response => response.json())
         .then(data => {
             if (data.loaded) {
-                statusDiv.innerHTML = `GPS active · ${data.nodeCount} nodes ready`;
+                if (!currentLocation) {
+                    setStatusMessage('Tap Enable GPS to start location');
+                }
                 if (currentLocation && currentDestination && !isNavigating) fetchRoute(false, currentLocation);
             } else {
-                statusDiv.innerHTML = "Waiting for network…";
+                setStatusMessage('Waiting for server…');
                 setTimeout(checkNetworkStatus, 2000);
             }
         })
         .catch(() => {
-            statusDiv.innerHTML = "Connecting to server…";
+            setStatusMessage('Connecting to server…');
             setTimeout(checkNetworkStatus, 3000);
         });
 }
@@ -719,6 +717,7 @@ document.addEventListener('click', (e) => {
 window.addEventListener('load', () => {
     initMap();
     setEnableGpsButtonVisibility(true);
+    setStatusMessage('Tap Enable GPS to start location');
     checkNetworkStatus();
 
     if ('serviceWorker' in navigator) {
