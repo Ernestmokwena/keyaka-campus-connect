@@ -5,7 +5,7 @@ let currentHeading = null;
 let userMarker = null;
 let destMarker = null;
 let watchId = null;
-let isNavigating = false;
+let iysNavigating = false;
 let currentMode = "walk";
 let followMode = false;
 let routeSource = null;
@@ -27,7 +27,6 @@ const followBtn = document.getElementById('followMeBtn');
 const offRouteBadge = document.getElementById('offRouteBadge');
 const stopNavBtn = document.getElementById('stopNavBtn');
 const rotationIndicator = document.getElementById('rotationIndicator');
-const enableGpsBtn = document.getElementById('enableGpsBtn');
 
 function haversine(lat1, lon1, lat2, lon2) {
     const R = 6371000;
@@ -109,26 +108,18 @@ function handleDeviceOrientation(event) {
 }
 
 function initHeadingSensors() {
-    if (typeof DeviceOrientationEvent === 'undefined') {
-        return Promise.resolve();
-    }
-
+    if (typeof DeviceOrientationEvent === 'undefined') return;
     const eventName = 'ondeviceorientationabsolute' in window ? 'deviceorientationabsolute' : 'deviceorientation';
     const addListener = () => window.addEventListener(eventName, handleDeviceOrientation, true);
-
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        return DeviceOrientationEvent.requestPermission()
+        DeviceOrientationEvent.requestPermission()
             .then(permission => {
-                if (permission === 'granted') {
-                    addListener();
-                }
-                return permission;
+                if (permission === 'granted') addListener();
             })
-            .catch(() => undefined);
+            .catch(() => { });
+    } else {
+        addListener();
     }
-
-    addListener();
-    return Promise.resolve();
 }
 
 function clearRouteLayer() {
@@ -257,9 +248,13 @@ async function loadNetworkOverlay() {
             });
 
             console.log(`Network overlay loaded: ${geojson.features.length} features`);
+            statusDiv.innerHTML = `GPS active · ${geojson.features.length} paths loaded`;
+        } else {
+            statusDiv.innerHTML = "GPS active · No network data";
         }
     } catch (err) {
         console.error('Failed to load network overlay:', err);
+        statusDiv.innerHTML = "GPS active";
     }
 }
 
@@ -411,17 +406,15 @@ function checkNetworkStatus() {
         .then(response => response.json())
         .then(data => {
             if (data.loaded) {
-                if (!currentLocation) {
-                    setStatusMessage('Tap Enable GPS to start location');
-                }
+                statusDiv.innerHTML = `GPS active · ${data.nodeCount} nodes ready`;
                 if (currentLocation && currentDestination && !isNavigating) fetchRoute(false, currentLocation);
             } else {
-                setStatusMessage('Waiting for server…');
+                statusDiv.innerHTML = "Waiting for network…";
                 setTimeout(checkNetworkStatus, 2000);
             }
         })
         .catch(() => {
-            setStatusMessage('Connecting to server…');
+            statusDiv.innerHTML = "Connecting to server…";
             setTimeout(checkNetworkStatus, 3000);
         });
 }
@@ -476,110 +469,12 @@ function initMap() {
         .addTo(map);
 }
 
-function setEnableGpsButtonVisibility(visible) {
-    if (!enableGpsBtn) return;
-    enableGpsBtn.style.display = visible ? 'flex' : 'none';
-}
-
-function setStatusMessage(message, actionable = false) {
-    statusDiv.innerHTML = message;
-    statusDiv.style.cursor = actionable ? 'pointer' : 'default';
-    statusDiv.title = actionable ? 'Tap to retry location access' : '';
-}
-
-function requestLocationAccess() {
-    return new Promise((resolve) => {
-        if (!navigator.geolocation) {
-            setStatusMessage('GPS not supported');
-            resolve(false);
-            return;
-        }
-
-        const isSecure = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
-        if (!isSecure) {
-            setStatusMessage('Location access requires HTTPS or localhost');
-            resolve(false);
-            return;
-        }
-
-        setStatusMessage('Requesting location access...', false);
-
-        navigator.geolocation.getCurrentPosition(
-            (pos) => {
-                if (typeof pos.coords.accuracy === 'number' && pos.coords.accuracy > 100) {
-                    setStatusMessage('Weak GPS signal... move to an open area', true);
-                    resolve(false);
-                    return;
-                }
-
-                const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-                currentLocation = newLoc;
-                if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading)) {
-                    currentHeading = pos.coords.heading;
-                } else {
-                    currentHeading = null;
-                }
-
-                document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
-                setStatusMessage('Location access granted');
-                setEnableGpsButtonVisibility(false);
-
-                if (!watchId) {
-                    startGPS();
-                }
-
-                updateBearingMarker();
-
-                if (currentDestination) {
-                    const dist = haversine(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
-                    updateMetrics(dist);
-                }
-
-                resolve(true);
-            },
-            (error) => {
-                if (error.code === 1) {
-                    setStatusMessage('Location permission denied. Please allow it in your browser.', true);
-                } else if (error.code === 2) {
-                    setStatusMessage('Location unavailable. Try again.', true);
-                } else if (error.code === 3) {
-                    setStatusMessage('GPS timeout. Try again.', true);
-                } else {
-                    setStatusMessage(`GPS error: ${error.message || 'unknown'}`, true);
-                }
-                resolve(false);
-            },
-            { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
-        );
-    });
-}
-
 function startGPS() {
-    if (!navigator.geolocation) {
-        statusDiv.innerHTML = "GPS not supported";
-        return;
-    }
-
-    const isSecure = window.isSecureContext || location.protocol === 'https:' || location.hostname === 'localhost';
-    if (!isSecure) {
-        statusDiv.innerHTML = "Location access requires HTTPS or localhost";
-        return;
-    }
-
-    if (watchId) {
-        setEnableGpsButtonVisibility(false);
-        return;
-    }
-
+    if (!navigator.geolocation) { statusDiv.innerHTML = "GPS not supported"; return; }
     const led = document.getElementById('gpsLed');
 
     watchId = navigator.geolocation.watchPosition(
         (pos) => {
-            if (typeof pos.coords.accuracy === 'number' && pos.coords.accuracy > 100) {
-                setStatusMessage('Weak GPS signal... move to an open area', true);
-                return;
-            }
-
             const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
             currentLocation = newLoc;
             if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading)) {
@@ -587,7 +482,6 @@ function startGPS() {
             } else {
                 currentHeading = null;
             }
-
             document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
             led.classList.add('live');
 
@@ -627,17 +521,9 @@ function startGPS() {
         },
         (error) => {
             led.classList.remove('live');
-            if (error.code === 1) {
-                statusDiv.innerHTML = "Location permission denied";
-            } else if (error.code === 2) {
-                setStatusMessage('Location unavailable. Try again.', true);
-            } else if (error.code === 3) {
-                setStatusMessage('GPS timeout. Try again.', true);
-            } else {
-                setStatusMessage(`GPS error: ${error.message || 'unknown'}`, true);
-            }
+            statusDiv.innerHTML = error.code === 1 ? "Location permission denied" : "GPS error";
         },
-        { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+        { enableHighAccuracy: true, maximumAge: 6000, timeout: 10000 }
     );
 }
 
@@ -657,12 +543,6 @@ document.getElementById('zoomOutBtn').addEventListener('click', () => map.zoomOu
 document.getElementById('rotateTestBtn').addEventListener('click', testRotation);
 document.getElementById('resetNorthBtn').addEventListener('click', resetNorth);
 followBtn.addEventListener('click', toggleFollowMode);
-enableGpsBtn.addEventListener('click', async () => {
-    const granted = await requestLocationAccess();
-    if (granted) {
-        await initHeadingSensors();
-    }
-});
 document.getElementById('startNavBtn').addEventListener('click', startNavigation);
 document.getElementById('stopNavBtn').addEventListener('click', stopNavigation);
 document.getElementById('navTabBtn').addEventListener('click', () => {
@@ -716,8 +596,8 @@ document.addEventListener('click', (e) => {
 
 window.addEventListener('load', () => {
     initMap();
-    setEnableGpsButtonVisibility(true);
-    setStatusMessage('Tap Enable GPS to start location');
+    startGPS();
+    initHeadingSensors();
     checkNetworkStatus();
 
     if ('serviceWorker' in navigator) {
