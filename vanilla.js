@@ -523,7 +523,7 @@ function startGPS() {
             led.classList.remove('live');
             statusDiv.innerHTML = error.code === 1 ? "Location permission denied" : "GPS error";
         },
-        { enableHighAccuracy: true, maximumAge: 6000, timeout: 10000 }
+        { enableHighAccuracy: false, maximumAge: 6000, timeout: 20000 }
     );
 }
 
