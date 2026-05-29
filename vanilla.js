@@ -12,6 +12,7 @@ let routeSource = null;
 let routeLayer = null;
 let networkSource = null;
 let networkLayer = null;
+let manualOrigin = false;
 
 let isFetchingRoute = false;
 let currentRouteRequestId = 0;
@@ -144,6 +145,82 @@ function updateMetrics(distance) {
     document.getElementById('distanceVal').innerHTML = distText;
     document.getElementById('timeVal').innerHTML = `${Math.ceil(time)} min`;
     document.getElementById('compactDistance').innerHTML = distText;
+}
+
+function parseCoordinates(value) {
+    if (!value) return null;
+    const parts = value.split(',').map(part => part.trim()).filter(Boolean);
+    if (parts.length !== 2) return null;
+    const lat = parseFloat(parts[0].replace(/\s+/g, '').replace(',', '.'));
+    const lng = parseFloat(parts[1].replace(/\s+/g, '').replace(',', '.'));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+    return { lat, lng };
+}
+
+function updateDepartureDisplay() {
+    const label = document.getElementById('departureLabelText');
+    const input = document.getElementById('departureInput');
+    if (input.dataset.editing === 'true') return;
+
+    if (currentLocation) {
+        label.textContent = `${currentLocation.lat.toFixed(5)}, ${currentLocation.lng.toFixed(5)}`;
+    } else {
+        label.textContent = 'Your location';
+    }
+}
+
+function commitOriginInput() {
+    const label = document.getElementById('departureLabelText');
+    const input = document.getElementById('departureInput');
+    const value = input.value.trim();
+    const coords = parseCoordinates(value);
+
+    input.dataset.editing = 'false';
+    input.style.display = 'none';
+    label.style.display = 'block';
+
+    if (!coords) {
+        statusDiv.innerHTML = 'Invalid origin format. Use lat, lng';
+        updateDepartureDisplay();
+        return;
+    }
+
+    manualOrigin = true;
+    currentLocation = coords;
+    document.getElementById('departureLabelText').textContent = `${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}`;
+
+    if (userMarker) {
+        userMarker.setLngLat([coords.lng, coords.lat]);
+    }
+
+    statusDiv.innerHTML = 'Origin set manually';
+    if (currentDestination) {
+        fetchRoute(false, currentLocation);
+        const dist = haversine(currentLocation.lat, currentLocation.lng, currentDestination.lat, currentDestination.lng);
+        updateMetrics(dist);
+    }
+}
+
+function activateOriginInput() {
+    const label = document.getElementById('departureLabelText');
+    const input = document.getElementById('departureInput');
+    input.value = currentLocation ? `${currentLocation.lat.toFixed(5)}, ${currentLocation.lng.toFixed(5)}` : '';
+    label.style.display = 'none';
+    input.style.display = 'block';
+    input.dataset.editing = 'true';
+    input.focus();
+}
+
+function setOriginFromGPS(lat, lng) {
+    if (manualOrigin) return;
+    currentLocation = { lat, lng };
+    document.getElementById('departureLabelText').textContent = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}
+
+function enableGPSOrigin() {
+    manualOrigin = false;
+    if (currentLocation) updateDepartureDisplay();
 }
 
 function fetchRoute(forceReroute = false, startPoint = null) {
@@ -476,14 +553,21 @@ function startGPS() {
     watchId = navigator.geolocation.watchPosition(
         (pos) => {
             const newLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            currentLocation = newLoc;
+            if (!manualOrigin) {
+                setOriginFromGPS(newLoc.lat, newLoc.lng);
+            }
             if (typeof pos.coords.heading === 'number' && !isNaN(pos.coords.heading)) {
                 currentHeading = pos.coords.heading;
             } else {
                 currentHeading = null;
             }
-            document.getElementById('departureLabel').innerHTML = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+            if (!manualOrigin) {
+                statusDiv.innerHTML = 'GPS active';
+            }
             led.classList.add('live');
+            if (!manualOrigin) {
+                document.getElementById('departureLabelText').textContent = `${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+            }
 
             userMarker.setLngLat([pos.coords.longitude, pos.coords.latitude]);
 
@@ -586,6 +670,27 @@ clearSearchBtn.addEventListener('click', () => {
     clearSearchBtn.style.display = 'none';
     suggestionsDropdown.classList.remove('show');
     searchInput.focus();
+});
+
+const departureLabelText = document.getElementById('departureLabelText');
+const departureInput = document.getElementById('departureInput');
+
+departureLabelText.addEventListener('click', activateOriginInput);
+departureInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        commitOriginInput();
+    }
+    if (e.key === 'Escape') {
+        departureInput.dataset.editing = 'false';
+        departureInput.style.display = 'none';
+        departureLabelText.style.display = 'block';
+        departureInput.value = '';
+    }
+});
+departureInput.addEventListener('blur', () => {
+    if (departureInput.dataset.editing === 'true') {
+        commitOriginInput();
+    }
 });
 
 document.addEventListener('click', (e) => {
