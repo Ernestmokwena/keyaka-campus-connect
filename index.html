@@ -411,6 +411,25 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            cursor: text;
+        }
+
+        .route-card-input {
+            width: 100%;
+            background: transparent;
+            border: 1px solid transparent;
+            color: var(--text-1);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            padding: 0;
+            outline: none;
+            min-height: 20px;
+        }
+        .route-card-input:focus {
+            border-color: transparent;
+            background: transparent;
+            border-radius: 8px;
         }
 
         .metrics-strip {
@@ -859,7 +878,8 @@
                 <div class="route-dot origin"></div>
                 <div class="route-card-content">
                     <div class="route-card-label">From</div>
-                    <div class="route-card-value" id="departureLabel">Your location</div>
+                    <div class="route-card-value" id="departureLabelText" title="Tap to type origin coordinates">Your location</div>
+                    <input class="route-card-input" id="departureInput" type="text" placeholder="-23.89172, 29.73509" style="display:none;" autocomplete="off" />
                 </div>
             </div>
 
